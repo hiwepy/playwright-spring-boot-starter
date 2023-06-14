@@ -68,9 +68,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public void passivateObject(PooledObject<BrowserContext> p) throws Exception {
-        p.getObject().pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
-        p.getObject().clearCookies();
-        p.getObject().pages().get(0).navigate("about:blank");
+        BrowserContext browserContext = p.getObject();
+        browserContext.pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
+        browserContext.clearCookies();
+        browserContext.pages().get(0).navigate("about:blank");
     }
 
     /**

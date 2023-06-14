@@ -8,7 +8,7 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import java.util.Objects;
 
-public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>, AutoCloseable {
+public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page> {
 
     private final BrowserContextPool browserContextPool;
 
@@ -24,6 +24,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public void activateObject(PooledObject<Page> p) throws Exception {
+        // 激活对象时的逻辑，这里不需要执行任何操作，留空即可
     }
 
     /**
@@ -34,6 +35,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public void destroyObject(PooledObject<Page> p) throws Exception {
+        // 销毁对象时的逻辑，关闭 Page 对象
         p.getObject().close();
     }
 
@@ -44,8 +46,10 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public PooledObject<Page> makeObject() throws Exception {
+        // 创建对象时的逻辑，借用 BrowserContextPool 中的 BrowserContext 对象创建 Page 对象
         BrowserContext browserContext = browserContextPool.borrowObject();
-        return new DefaultPooledObject<>(browserContext.newPage());
+        Page page = browserContext.newPage();
+        return new DefaultPooledObject<>(page);
     }
 
     /**
@@ -56,6 +60,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public void passivateObject(PooledObject<Page> p) throws Exception {
+        // 归还对象时的逻辑，执行一些清理操作
         p.getObject().evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
         p.getObject().navigate("about:blank");
     }
@@ -70,12 +75,8 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public boolean validateObject(PooledObject<Page> p) {
+        // 验证对象的有效性，检查对象是否为空且未关闭
         return Objects.nonNull(p.getObject()) && !p.getObject().isClosed();
-    }
-
-    @Override
-    public void close() throws Exception {
-        browserContextPool.close();
     }
 
 }
