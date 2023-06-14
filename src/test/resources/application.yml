@@ -1,2 +1,3 @@
-playwright:
-
+spring:
+  jmx:
+    default-domain=myapp1
