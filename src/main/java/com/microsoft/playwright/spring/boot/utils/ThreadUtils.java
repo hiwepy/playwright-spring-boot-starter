@@ -16,15 +16,14 @@
  */
 package com.microsoft.playwright.spring.boot.utils;
 
-import org.apache.rocketmq.common.constant.LoggerName;
-import org.apache.rocketmq.logging.InternalLogger;
-import org.apache.rocketmq.logging.InternalLoggerFactory;
+
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public final class ThreadUtils {
-    private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.TOOLS_LOGGER_NAME);
 
     public static ExecutorService newThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                                         TimeUnit unit, BlockingQueue<Runnable> workQueue, String processName, boolean isDaemon) {
@@ -119,8 +118,9 @@ public final class ThreadUtils {
      * @param t Thread to stop
      */
     public static void shutdownGracefully(final Thread t, final long millis) {
-        if (t == null)
+        if (t == null) {
             return;
+        }
         while (t.isAlive()) {
             try {
                 t.interrupt();
