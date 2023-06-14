@@ -44,7 +44,7 @@ public class PlaywrightAutoConfiguration {
     }
 
     @Bean
-    public BrowserPagePool browserContextPool(PlaywrightProperties playwrightProperties, BrowserPagePooledObjectFactory browserPagePooledObjectFactory){
+    public BrowserPagePool browserPagePool(PlaywrightProperties playwrightProperties, BrowserPagePooledObjectFactory browserPagePooledObjectFactory){
         BrowserPagePool browserContextPool = new BrowserPagePool(browserPagePooledObjectFactory, playwrightProperties.getPagePoolConfig());
         return browserContextPool;
     }
