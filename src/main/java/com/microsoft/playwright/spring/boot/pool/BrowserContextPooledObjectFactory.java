@@ -12,11 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
-    /**
-     * Playwright管理容器
-     */
-    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
-
+    private Playwright playwright = Playwright.create();
     private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.CHROMIUM;
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
     private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
@@ -64,11 +60,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
-        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
         browserContext.close();
-        if (playwright != null) {
-            playwright.close();
-        }
     }
 
     /**
@@ -78,7 +70,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
-        Playwright playwright = Playwright.create();
         // 创建一个新的浏览器上下文
         BrowserContext browserContext;
         switch (browserType) {
@@ -97,7 +88,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         // 创建一个默认的页面
         Page page = browserContext.newPage();
         page.navigate("about:blank");
-        PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -130,10 +120,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     @Override
     public void close() throws Exception {
-        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
-            browserContext.close();
+        if (playwright != null) {
             playwright.close();
-        });
+        }
     }
 
 }

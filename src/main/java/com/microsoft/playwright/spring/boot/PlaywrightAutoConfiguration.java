@@ -1,7 +1,10 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.spring.boot.pool.*;
+import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
+import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -24,26 +27,6 @@ import java.util.Objects;
 public class PlaywrightAutoConfiguration {
 
     protected static final PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-
-    @Bean(name = "browserPool")
-    @ConditionalOnMissingBean
-    public BrowserPool browserPool(PlaywrightProperties playwrightProperties){
-
-        // 1、创建 BrowserPooledObjectFactory 对象
-        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions();
-        this.copyProperties(playwrightProperties.getLaunchOptions(), launchOptions);
-        BrowserPooledObjectFactory factory = new BrowserPooledObjectFactory(playwrightProperties.getBrowser(), launchOptions);
-
-        // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<Browser> poolConfig = new GenericObjectPoolConfig<>();
-        this.copyProperties(playwrightProperties.getBrowserPool(), poolConfig);
-        poolConfig.setJmxEnabled(Boolean.FALSE);
-        poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserContextPool.class));
-
-        // 3、创建 BrowserContextPool 对象
-        BrowserPool browserPool = new BrowserPool(factory, poolConfig);
-        return browserPool;
-    }
 
     @Bean(name = "browserContextPool")
     @ConditionalOnMissingBean
@@ -72,19 +55,10 @@ public class PlaywrightAutoConfiguration {
     @Bean(name = "browserPagePool")
     @ConditionalOnMissingBean
     public BrowserPagePool browserPagePool(PlaywrightProperties playwrightProperties,
-                                           ObjectProvider<BrowserPool> browserPoolProvider,
                                            ObjectProvider<BrowserContextPool> browserContextPoolProvider){
 
         // 1、创建 BrowserPagePooledObjectFactory 对象，并传入 BrowserContextPool
-        BrowserPagePooledObjectFactory factory;
-        PlaywrightProperties.SessionOptions sessionOptions = playwrightProperties.getSessionOptions();
-        if(Objects.nonNull(sessionOptions) && Boolean.TRUE.equals(sessionOptions.getIsolation())){
-            factory = new BrowserPagePooledObjectFactory(browserContextPoolProvider.getObject());
-        } else {
-            Browser.NewPageOptions newPageOptions = new Browser.NewPageOptions();
-            this.copyProperties(playwrightProperties.getNewPageOptions(), newPageOptions);
-            factory = new BrowserPagePooledObjectFactory(browserPoolProvider.getObject(), newPageOptions);
-        }
+        BrowserPagePooledObjectFactory factory = new BrowserPagePooledObjectFactory(browserContextPoolProvider.getObject());
 
         // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
         GenericObjectPoolConfig<Page> poolConfig = new GenericObjectPoolConfig<>();
@@ -131,45 +105,6 @@ public class PlaywrightAutoConfiguration {
     }
 
     protected void copyProperties(PlaywrightProperties.NewContextOptions source, Browser.NewContextOptions options) {
-        if (Objects.isNull(source) || Objects.isNull(options)) {
-            return;
-        }
-        map.from(source.getAcceptDownloads()).whenNonNull().to(options::setAcceptDownloads);
-        map.from(source.getBaseURL()).whenHasText().to(options::setBaseURL);
-        map.from(source.getBypassCSP()).whenNonNull().to(options::setBypassCSP);
-        map.from(source.getColorScheme()).to(options::setColorScheme);
-        map.from(source.getDeviceScaleFactor()).whenNonNull().to(options::setDeviceScaleFactor);
-        map.from(source.getExtraHttpHeaders()).whenNonNull().to(options::setExtraHTTPHeaders);
-        map.from(source.getForcedColors()).whenNonNull().to(options::setForcedColors);
-        map.from(source.getGeolocation()).whenNonNull().to(options::setGeolocation);
-        map.from(source.getHasTouch()).whenNonNull().to(options::setHasTouch);
-        map.from(source.getHttpCredentials()).whenNonNull().to(options::setHttpCredentials);
-        map.from(source.getIgnoreHttpsErrors()).whenNonNull().to(options::setIgnoreHTTPSErrors);
-        map.from(source.getIsMobile()).whenNonNull().to(options::setIsMobile);
-        map.from(source.getJavaScriptEnabled()).whenNonNull().to(options::setJavaScriptEnabled);
-        map.from(source.getLocale()).whenHasText().to(options::setLocale);
-        map.from(source.getOffline()).whenNonNull().to(options::setOffline);
-        map.from(source.getPermissions()).when(permissions -> !CollectionUtils.isEmpty(permissions)).to(options::setPermissions);
-        map.from(source.getProxy()).whenNonNull().to(options::setProxy);
-        map.from(source.getRecordHarMode()).whenNonNull().to(options::setRecordHarMode);
-        map.from(source.getRecordHarContent()).whenNonNull().to(options::setRecordHarContent);
-        map.from(source.getRecordHarOmitContent()).whenNonNull().to(options::setRecordHarOmitContent);
-        map.from(source.getRecordHarPath()).whenNonNull().to(options::setRecordHarPath);
-        map.from(source.getRecordHarUrlFilter()).whenHasText().to(options::setRecordHarUrlFilter);
-        map.from(source.getRecordVideoDir()).whenNonNull().to(options::setRecordVideoDir);
-        map.from(source.getRecordVideoSize()).whenNonNull().to(options::setRecordVideoSize);
-        map.from(source.getReducedMotion()).whenNonNull().to(options::setReducedMotion);
-        map.from(source.getScreenSize()).whenNonNull().to(options::setScreenSize);
-        map.from(source.getServiceWorkers()).whenNonNull().to(options::setServiceWorkers);
-        map.from(source.getStorageState()).whenHasText().to(options::setStorageState);
-        map.from(source.getStorageStatePath()).whenNonNull().to(options::setStorageStatePath);
-        map.from(source.getStrictSelectors()).whenNonNull().to(options::setStrictSelectors);
-        map.from(source.getTimezoneId()).whenHasText().to(options::setTimezoneId);
-        map.from(source.getUserAgent()).whenHasText().to(options::setUserAgent);
-        map.from(source.getViewportSize()).whenNonNull().to(options::setViewportSize);
-    }
-
-    protected void copyProperties(PlaywrightProperties.NewPageOptions source, Browser.NewPageOptions options) {
         if (Objects.isNull(source) || Objects.isNull(options)) {
             return;
         }

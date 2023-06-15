@@ -1,10 +1,7 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -13,19 +10,10 @@ import java.util.Objects;
 
 public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page> {
 
-    private BrowserPool browserPool;
-    private BrowserContextPool browserContextPool;
-    private Browser.NewPageOptions newPageOptions = new Browser.NewPageOptions();
+    private final BrowserContextPool browserContextPool;
 
     public BrowserPagePooledObjectFactory(BrowserContextPool browserContextPool) {
         this.browserContextPool = browserContextPool;
-    }
-
-    public BrowserPagePooledObjectFactory(BrowserPool browserPool, Browser.NewPageOptions newPageOptions) {
-        this.browserPool = browserPool;
-        if (Objects.nonNull(newPageOptions)) {
-            this.newPageOptions = newPageOptions;
-        }
     }
 
     /**
@@ -58,12 +46,6 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public PooledObject<Page> makeObject() throws Exception {
-        // 如果browserPool不为空，借用 BrowserPool 中的 Browser 对象创建 Page 对象
-        if (Objects.nonNull(browserPool)) {
-            Browser browser = browserPool.borrowObject();
-            Page page = Objects.nonNull(newPageOptions) ? browser.newPage(newPageOptions) : browser.newPage();
-            return new DefaultPooledObject<>(page);
-        }
         // 借用 BrowserContextPool 中的 BrowserContext 对象创建 Page 对象
         BrowserContext browserContext = browserContextPool.borrowObject();
         Page page = browserContext.newPage();
