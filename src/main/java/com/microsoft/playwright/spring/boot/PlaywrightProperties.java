@@ -39,6 +39,8 @@ public class PlaywrightProperties {
 
 	private BrowserType browser = BrowserType.CHROMIUM;
 
+	private SessionOptions sessionOptions = new SessionOptions();
+
 	private ConnectOptions connectOptions = new ConnectOptions();
 
 	private LaunchOptions launchOptions = new LaunchOptions();
@@ -51,10 +53,18 @@ public class PlaywrightProperties {
 
 	private ObjectPoolConfig pagePool = new ObjectPoolConfig();
 
-	public static enum BrowserType {
+	public enum BrowserType {
 		CHROMIUM,
 		FIREFOX,
 		WEBKIT
+	}
+
+	@Data
+	public static class SessionOptions {
+		/**
+		 * IF the browser session isolated? Default to isolation
+		 */
+		public Boolean isolation;
 	}
 
 	@Data

@@ -6,6 +6,7 @@ import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -70,12 +71,20 @@ public class PlaywrightAutoConfiguration {
 
     @Bean(name = "browserPagePool")
     @ConditionalOnMissingBean
-    public BrowserPagePool browserPagePool(PlaywrightProperties playwrightProperties, BrowserContextPool browserContextPool){
+    public BrowserPagePool browserPagePool(PlaywrightProperties playwrightProperties,
+                                           ObjectProvider<BrowserPool> browserPoolProvider,
+                                           ObjectProvider<BrowserContextPool> browserContextPoolProvider){
 
         // 1、创建 BrowserPagePooledObjectFactory 对象，并传入 BrowserContextPool
-        Browser.NewPageOptions newPageOptions = new Browser.NewPageOptions();
-        this.copyProperties(playwrightProperties.getNewPageOptions(), newPageOptions);
-        BrowserPagePooledObjectFactory factory = new BrowserPagePooledObjectFactory(browserContextPool);
+        BrowserPagePooledObjectFactory factory;
+        PlaywrightProperties.SessionOptions sessionOptions = playwrightProperties.getSessionOptions();
+        if(Objects.nonNull(sessionOptions) && Boolean.TRUE.equals(sessionOptions.getIsolation())){
+            factory = new BrowserPagePooledObjectFactory(browserContextPoolProvider.getObject());
+        } else {
+            Browser.NewPageOptions newPageOptions = new Browser.NewPageOptions();
+            this.copyProperties(playwrightProperties.getNewPageOptions(), newPageOptions);
+            factory = new BrowserPagePooledObjectFactory(browserPoolProvider.getObject(), newPageOptions);
+        }
 
         // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
         GenericObjectPoolConfig<Page> poolConfig = new GenericObjectPoolConfig<>();
