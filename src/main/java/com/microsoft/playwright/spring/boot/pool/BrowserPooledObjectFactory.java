@@ -1,7 +1,6 @@
 package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import org.apache.commons.pool2.PooledObject;
@@ -12,33 +11,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
+public class BrowserPooledObjectFactory implements PooledObjectFactory<Browser>, AutoCloseable {
 
     /**
      * Playwright管理容器
      */
-    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
+    private static final Map<Browser, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
     private BrowserType.ConnectOptions connectOptions = new BrowserType.ConnectOptions();
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
-    private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
 
-    public BrowserContextPooledObjectFactory() {
+    public BrowserPooledObjectFactory() {
     }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions) {
-        this(launchOptions, null, null);
+    public BrowserPooledObjectFactory(BrowserType.LaunchOptions launchOptions) {
+        this(launchOptions, null);
     }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions) {
-        this(launchOptions, connectOptions, null);
-    }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions, Browser.NewContextOptions newContextOptions) {
+    public BrowserPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions) {
         if (Objects.nonNull(connectOptions)) {
             this.connectOptions = connectOptions;
         }
         if (Objects.nonNull(launchOptions)) {
             this.launchOptions = launchOptions;
-        }
-        if (Objects.nonNull(newContextOptions)) {
-            this.newContextOptions = newContextOptions;
         }
     }
 
@@ -49,8 +41,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * @throws Exception
      */
     @Override
-    public void activateObject(PooledObject<BrowserContext> p) throws Exception {
-        p.getObject().clearCookies();
+    public void activateObject(PooledObject<Browser> p) throws Exception {
+        // 激活对象时的逻辑，这里不需要执行任何操作，留空即可
     }
 
     /**
@@ -60,10 +52,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * @throws Exception
      */
     @Override
-    public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
-        BrowserContext browserContext = p.getObject();
-        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
-        browserContext.close();
+    public void destroyObject(PooledObject<Browser> p) throws Exception {
+        Browser browser = p.getObject();
+        Playwright playwright = PLAYWRIGHT_MAP.remove(browser);
+        browser.close();
         if (playwright != null) {
             playwright.close();
         }
@@ -75,16 +67,15 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * @throws Exception
      */
     @Override
-    public PooledObject<BrowserContext> makeObject() throws Exception {
+    public PooledObject<Browser> makeObject() throws Exception {
         Playwright playwright = Playwright.create();
-        // 创建一个新的浏览器上下文
-        BrowserContext browserContext = playwright.chromium()
-                .launch(launchOptions)
-                .newContext(newContextOptions);
+        // 创建一个新的浏览器
+        Browser browser = playwright.chromium()
+                .launch(launchOptions);
         // 创建一个默认的页面
-        browserContext.newPage();
-        PLAYWRIGHT_MAP.put(browserContext, playwright);
-        return new DefaultPooledObject<>(browserContext);
+        browser.newPage();
+        PLAYWRIGHT_MAP.put(browser, playwright);
+        return new DefaultPooledObject<>(browser);
     }
 
     /**
@@ -94,11 +85,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * @throws Exception
      */
     @Override
-    public void passivateObject(PooledObject<BrowserContext> p) throws Exception {
-        BrowserContext browserContext = p.getObject();
-        browserContext.pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
-        browserContext.clearCookies();
-        browserContext.pages().get(0).navigate("about:blank");
+    public void passivateObject(PooledObject<Browser> p) throws Exception {
+        // 钝化对象时的逻辑，这里不需要执行任何操作，留空即可
     }
 
     /**
@@ -110,14 +98,15 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * @return
      */
     @Override
-    public boolean validateObject(PooledObject<BrowserContext> p) {
-        return true;
+    public boolean validateObject(PooledObject<Browser> p) {
+        Browser browser = p.getObject();
+        return Objects.nonNull(browser) && browser.isConnected();
     }
 
     @Override
     public void close() throws Exception {
-        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
-            browserContext.close();
+        PLAYWRIGHT_MAP.forEach((browser, playwright) -> {
+            browser.close();
             playwright.close();
         });
     }
