@@ -123,7 +123,11 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
-        return true;
+        BrowserContext browserContext = p.getObject();
+        if(Objects.isNull(browserContext)){
+            return Boolean.FALSE;
+        }
+        return browserContext.browser().isConnected();
     }
 
     @Override

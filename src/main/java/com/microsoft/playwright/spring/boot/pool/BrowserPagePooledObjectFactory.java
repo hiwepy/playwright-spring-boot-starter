@@ -2,7 +2,6 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -41,13 +40,28 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public void destroyObject(PooledObject<Page> p) throws Exception {
         // 销毁对象时的逻辑，关闭 Page 对象
         Page page = p.getObject();
-        page.close();
+        if(Objects.isNull(page)){
+            return;
+        }
+        // 从 BROWSER_CONTEXT_MAP 中移除 Page 对象，并返回对应的 BrowserContext 对象
         BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
+        // 归还 BrowserContext 对象
+        returnBrowserContext(page, browserContext);
+        // 关闭 Page 对象
+        if (!page.isClosed()) {
+            page.close();
+        }
+    }
+
+    private void returnBrowserContext(Page page, BrowserContext browserContext) throws Exception {
+        // 如果 BrowserContext 对象不为空，则判断是否需要归还到池中
         if (browserContext != null) {
-           boolean isAllPageClosed = BROWSER_CONTEXT_MAP.values().stream().noneMatch(val -> val.equals(browserContext));
-           if(isAllPageClosed){
-               browserContextPool.returnObject(browserContext);
-           }
+            // 如果 BrowserContext 对象仍然连接，则归还到池中
+            if(browserContext.browser().isConnected()){
+                browserContextPool.returnObject(browserContext);
+            } else {
+                browserContextPool.invalidateObject(browserContext);
+            }
         }
     }
 
@@ -77,13 +91,10 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         // 归还对象时的逻辑，执行一些清理操作
         page.evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
         page.navigate("about:blank");
+        // 从 BROWSER_CONTEXT_MAP 中获得 Page 对应的 BrowserContext 对象
         BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
-        if (browserContext != null) {
-            boolean isAllPageClosed = BROWSER_CONTEXT_MAP.values().stream().noneMatch(val -> val.equals(browserContext));
-            if(isAllPageClosed){
-                browserContextPool.returnObject(browserContext);
-            }
-        }
+        // 归还 BrowserContext 对象
+        returnBrowserContext(page, browserContext);
     }
 
     /**
@@ -97,7 +108,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public boolean validateObject(PooledObject<Page> p) {
         // 验证对象的有效性，检查对象是否为空且未关闭
-        return Objects.nonNull(p.getObject()) && !p.getObject().isClosed();
+        Page page = p.getObject();
+        if(Objects.isNull(page) || page.isClosed()){
+            return Boolean.FALSE;
+        }
+        BrowserContext browserContext = BROWSER_CONTEXT_MAP.get(page);
+        if (browserContext == null) {
+            return Boolean.FALSE;
+        }
+        return browserContext.browser().isConnected();
     }
 
 }
