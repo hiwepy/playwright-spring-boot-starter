@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page> {
 
     private final BrowserContextPool browserContextPool;
-    private static final Map<Page, BrowserContext> BROWSER_CONTEXT_MAP = new ConcurrentHashMap<>();
 
     public BrowserPagePooledObjectFactory(BrowserContextPool browserContextPool) {
         this.browserContextPool = browserContextPool;
@@ -60,7 +59,6 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         // 借用 BrowserContextPool 中的 BrowserContext 对象创建 Page 对象
         BrowserContext browserContext = browserContextPool.borrowObject();
         Page page = browserContext.newPage();
-        BROWSER_CONTEXT_MAP.put(page, browserContext);
         return new DefaultPooledObject<>(page);
     }
 
@@ -77,22 +75,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         page.evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
         page.navigate("about:blank");
         // 从 BROWSER_CONTEXT_MAP 中获得 Page 对应的 BrowserContext 对象
-        BrowserContext browserContext = BROWSER_CONTEXT_MAP.get(page);
-        // 归还 BrowserContext 对象
-        returnBrowserContext(page, browserContext);
-    }
-
-    private void returnBrowserContext(Page page, BrowserContext browserContext) throws Exception {
-        // 如果 BrowserContext 对象不为空，则判断是否需要归还到池中
-        if (browserContext != null) {
-            // 如果 BrowserContext 对象仍然连接，则归还到池中
-            if(browserContext.browser().isConnected()){
-                browserContextPool.returnObject(browserContext);
-            } else {
-                browserContextPool.invalidateObject(browserContext);
-            }
+        BrowserContext browserContext = page.context();
+        // 如果 BrowserContext 对象仍然连接，则归还到池中
+        if(browserContext.browser().isConnected()){
+            browserContextPool.returnObject(browserContext);
+        } else {
+            browserContextPool.invalidateObject(browserContext);
         }
     }
+
 
     /**
      * 检测对象是否"有效";Pool中不能保存无效的"对象",因此"后台检测线程"会周期性的检测Pool中"对象"的有效性,如果对象无效则会导致此对象从Pool中移除,并destroy;此外在调用者从Pool获取一个"对象"时,也会检测"对象"的有效性,确保不能讲"无效"的对象输出给调用者;当调用者使用完毕将"对象归还"到Pool时,仍然会检测对象的有效性.所谓有效性,就是此"对象"的状态是否符合预期,是否可以对调用者直接使用;如果对象是Socket,那么它的有效性就是socket的通道是否畅通/阻塞是否超时等.
@@ -109,7 +100,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         if(Objects.isNull(page) || page.isClosed()){
             return Boolean.FALSE;
         }
-        BrowserContext browserContext = BROWSER_CONTEXT_MAP.get(page);
+        BrowserContext browserContext = page.context();
         if (browserContext == null) {
             return Boolean.FALSE;
         }
