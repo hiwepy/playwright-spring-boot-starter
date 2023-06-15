@@ -2,7 +2,9 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -17,17 +19,17 @@ public class BrowserPooledObjectFactory implements PooledObjectFactory<Browser>,
      * Playwright管理容器
      */
     private static final Map<Browser, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
-    private BrowserType.ConnectOptions connectOptions = new BrowserType.ConnectOptions();
+
+    private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.CHROMIUM;
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
 
     public BrowserPooledObjectFactory() {
     }
-    public BrowserPooledObjectFactory(BrowserType.LaunchOptions launchOptions) {
-        this(launchOptions, null);
-    }
-    public BrowserPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions) {
-        if (Objects.nonNull(connectOptions)) {
-            this.connectOptions = connectOptions;
+
+    public BrowserPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
+                                      BrowserType.LaunchOptions launchOptions) {
+        if (Objects.nonNull(browserType)) {
+            this.browserType = browserType;
         }
         if (Objects.nonNull(launchOptions)) {
             this.launchOptions = launchOptions;
@@ -70,10 +72,23 @@ public class BrowserPooledObjectFactory implements PooledObjectFactory<Browser>,
     public PooledObject<Browser> makeObject() throws Exception {
         Playwright playwright = Playwright.create();
         // 创建一个新的浏览器
-        Browser browser = playwright.chromium()
-                .launch(launchOptions);
+        Browser browser;
+        switch (browserType) {
+            case CHROMIUM:
+                browser = playwright.chromium().launch(launchOptions);
+                break;
+            case FIREFOX:
+                browser = playwright.firefox().launch(launchOptions);
+                break;
+            case WEBKIT:
+                browser = playwright.webkit().launch(launchOptions);
+                break;
+            default:
+                throw new IllegalArgumentException("browserType is not supported");
+        }
         // 创建一个默认的页面
-        browser.newPage();
+        Page page = browser.newPage();
+        page.navigate("about:blank");
         PLAYWRIGHT_MAP.put(browser, playwright);
         return new DefaultPooledObject<>(browser);
     }

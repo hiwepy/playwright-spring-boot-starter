@@ -1,9 +1,7 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -18,21 +16,25 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * Playwright管理容器
      */
     private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
-    private BrowserType.ConnectOptions connectOptions = new BrowserType.ConnectOptions();
+
+    private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.CHROMIUM;
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
     private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
 
-    public BrowserContextPooledObjectFactory() {
+    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType) {
+        this(browserType, null, null);
     }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions) {
-        this(launchOptions, null, null);
+
+    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
+                                             BrowserType.LaunchOptions launchOptions) {
+        this(browserType, launchOptions, null);
     }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions) {
-        this(launchOptions, connectOptions, null);
-    }
-    public BrowserContextPooledObjectFactory(BrowserType.LaunchOptions launchOptions, BrowserType.ConnectOptions connectOptions, Browser.NewContextOptions newContextOptions) {
-        if (Objects.nonNull(connectOptions)) {
-            this.connectOptions = connectOptions;
+
+    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
+                                             BrowserType.LaunchOptions launchOptions,
+                                             Browser.NewContextOptions newContextOptions) {
+        if (Objects.nonNull(browserType)) {
+            this.browserType = browserType;
         }
         if (Objects.nonNull(launchOptions)) {
             this.launchOptions = launchOptions;
@@ -78,11 +80,23 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     public PooledObject<BrowserContext> makeObject() throws Exception {
         Playwright playwright = Playwright.create();
         // 创建一个新的浏览器上下文
-        BrowserContext browserContext = playwright.chromium()
-                .launch(launchOptions)
-                .newContext(newContextOptions);
+        BrowserContext browserContext;
+        switch (browserType) {
+            case CHROMIUM:
+                browserContext = playwright.chromium().launch(launchOptions).newContext(newContextOptions);
+                break;
+            case FIREFOX:
+                browserContext = playwright.firefox().launch(launchOptions).newContext(newContextOptions);
+                break;
+            case WEBKIT:
+                browserContext = playwright.webkit().launch(launchOptions).newContext(newContextOptions);
+                break;
+            default:
+                throw new IllegalArgumentException("browserType is not supported");
+        }
         // 创建一个默认的页面
-        browserContext.newPage();
+        Page page = browserContext.newPage();
+        page.navigate("about:blank");
         PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
