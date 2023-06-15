@@ -2,15 +2,19 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page> {
 
     private final BrowserContextPool browserContextPool;
+    private static final Map<Page, BrowserContext> BROWSER_CONTEXT_MAP = new ConcurrentHashMap<>();
 
     public BrowserPagePooledObjectFactory(BrowserContextPool browserContextPool) {
         this.browserContextPool = browserContextPool;
@@ -36,7 +40,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public void destroyObject(PooledObject<Page> p) throws Exception {
         // 销毁对象时的逻辑，关闭 Page 对象
-        p.getObject().close();
+        Page page = p.getObject();
+        page.close();
+        BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
+        if (browserContext != null) {
+           boolean isAllPageClosed = BROWSER_CONTEXT_MAP.values().stream().noneMatch(val -> val.equals(browserContext));
+           if(isAllPageClosed){
+               browserContextPool.returnObject(browserContext);
+           }
+        }
     }
 
     /**
@@ -49,6 +61,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         // 借用 BrowserContextPool 中的 BrowserContext 对象创建 Page 对象
         BrowserContext browserContext = browserContextPool.borrowObject();
         Page page = browserContext.newPage();
+        BROWSER_CONTEXT_MAP.put(page, browserContext);
         return new DefaultPooledObject<>(page);
     }
 
@@ -60,9 +73,17 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public void passivateObject(PooledObject<Page> p) throws Exception {
+        Page page = p.getObject();
         // 归还对象时的逻辑，执行一些清理操作
-        p.getObject().evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
-        p.getObject().navigate("about:blank");
+        page.evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
+        page.navigate("about:blank");
+        BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
+        if (browserContext != null) {
+            boolean isAllPageClosed = BROWSER_CONTEXT_MAP.values().stream().noneMatch(val -> val.equals(browserContext));
+            if(isAllPageClosed){
+                browserContextPool.returnObject(browserContext);
+            }
+        }
     }
 
     /**

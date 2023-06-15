@@ -12,7 +12,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
-    private Playwright playwright = Playwright.create();
+    /**
+     * Playwright管理容器
+     */
+    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
     private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.CHROMIUM;
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
     private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
@@ -60,7 +63,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
-        browserContext.close();
+        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+        if (playwright != null) {
+            playwright.close();
+        }
     }
 
     /**
@@ -70,6 +76,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
+        Playwright playwright = Playwright.create();
         // 创建一个新的浏览器上下文
         BrowserContext browserContext;
         switch (browserType) {
@@ -85,6 +92,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             default:
                 throw new IllegalArgumentException("browserType is not supported");
         }
+        PLAYWRIGHT_MAP.put(browserContext, playwright);
         // 创建一个默认的页面
         Page page = browserContext.newPage();
         page.navigate("about:blank");
@@ -120,9 +128,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     @Override
     public void close() throws Exception {
-        if (playwright != null) {
+        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
+            browserContext.close();
             playwright.close();
-        }
+        });
     }
 
 }
