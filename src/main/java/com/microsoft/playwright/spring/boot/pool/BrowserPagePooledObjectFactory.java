@@ -43,27 +43,12 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         if(Objects.isNull(page)){
             return;
         }
-        // 从 BROWSER_CONTEXT_MAP 中移除 Page 对象，并返回对应的 BrowserContext 对象
-        BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
-        // 归还 BrowserContext 对象
-        returnBrowserContext(page, browserContext);
         // 关闭 Page 对象
         if (!page.isClosed()) {
             page.close();
         }
     }
 
-    private void returnBrowserContext(Page page, BrowserContext browserContext) throws Exception {
-        // 如果 BrowserContext 对象不为空，则判断是否需要归还到池中
-        if (browserContext != null) {
-            // 如果 BrowserContext 对象仍然连接，则归还到池中
-            if(browserContext.browser().isConnected()){
-                browserContextPool.returnObject(browserContext);
-            } else {
-                browserContextPool.invalidateObject(browserContext);
-            }
-        }
-    }
 
     /**
      * 创建池中物（playwright）
@@ -92,9 +77,21 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         page.evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
         page.navigate("about:blank");
         // 从 BROWSER_CONTEXT_MAP 中获得 Page 对应的 BrowserContext 对象
-        BrowserContext browserContext = BROWSER_CONTEXT_MAP.remove(page);
+        BrowserContext browserContext = BROWSER_CONTEXT_MAP.get(page);
         // 归还 BrowserContext 对象
         returnBrowserContext(page, browserContext);
+    }
+
+    private void returnBrowserContext(Page page, BrowserContext browserContext) throws Exception {
+        // 如果 BrowserContext 对象不为空，则判断是否需要归还到池中
+        if (browserContext != null) {
+            // 如果 BrowserContext 对象仍然连接，则归还到池中
+            if(browserContext.browser().isConnected()){
+                browserContextPool.returnObject(browserContext);
+            } else {
+                browserContextPool.invalidateObject(browserContext);
+            }
+        }
     }
 
     /**
