@@ -56,6 +56,15 @@ public class PlaywrightProperties {
 	}
 
 	@Data
+	public static class Cookie {
+
+		public String name;
+		public String value;
+
+	}
+
+
+	@Data
 	public static class ConnectOptions {
 		/**
 		 * Additional HTTP headers to be sent with web socket connect request. Optional.

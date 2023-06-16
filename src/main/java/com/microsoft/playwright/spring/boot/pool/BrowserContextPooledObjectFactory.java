@@ -2,6 +2,7 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
     /**
@@ -51,7 +53,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public void activateObject(PooledObject<BrowserContext> p) throws Exception {
-        p.getObject().clearCookies();
+        BrowserContext browserContext = p.getObject();
+        if(Objects.nonNull(browserContext) && browserContext.browser().isConnected()){
+            browserContext.clearCookies();
+        }
     }
 
     /**
@@ -63,9 +68,11 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
+        log.info("Destroy BrowserContext Instance '{}'.", browserContext);
         Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
         if (playwright != null) {
             playwright.close();
+            log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
     }
 
@@ -77,6 +84,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
         Playwright playwright = Playwright.create();
+        log.info("Create Playwright Instance '{}' Success.", playwright);
         // 创建一个新的浏览器上下文
         BrowserContext browserContext;
         switch (browserType) {
@@ -92,10 +100,12 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             default:
                 throw new IllegalArgumentException("browserType is not supported");
         }
+        log.info("Create BrowserContext Instance '{}', browserType : {} Success.", browserContext, browserType);
         PLAYWRIGHT_MAP.put(browserContext, playwright);
         // 创建一个默认的页面
         Page page = browserContext.newPage();
         page.navigate("about:blank");
+        log.info("Create default Page Of browserContext And navigate to 'about:blank' success.");
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -108,9 +118,15 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void passivateObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
-        browserContext.pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
-        browserContext.clearCookies();
-        browserContext.pages().get(0).navigate("about:blank");
+        log.info("Return BrowserContext Instance '{}'.", browserContext);
+        if(Objects.nonNull(browserContext)){
+            browserContext.pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
+            log.info("Return BrowserContext Instance : clear localStorage success");
+            browserContext.clearCookies();
+            log.info("Return BrowserContext Instance : clear cookies success");
+            browserContext.pages().get(0).navigate("about:blank");
+            log.info("Return BrowserContext Instance : navigate to 'about:blank' success");
+        }
     }
 
     /**
@@ -124,10 +140,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
         BrowserContext browserContext = p.getObject();
-        if(Objects.isNull(browserContext)){
-            return Boolean.FALSE;
-        }
-        return browserContext.browser().isConnected();
+        Boolean isValidated = Objects.nonNull(browserContext);
+        log.info("Validate BrowserContext : {}, isValidated : {}", browserContext, isValidated);
+        return isValidated;
     }
 
     @Override

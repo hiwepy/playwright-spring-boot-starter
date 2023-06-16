@@ -2,6 +2,7 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page> {
 
     private final BrowserContextPool browserContextPool;
@@ -39,12 +41,14 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public void destroyObject(PooledObject<Page> p) throws Exception {
         // 销毁对象时的逻辑，关闭 Page 对象
         Page page = p.getObject();
+        log.info("Destroy Page Instance '{}'.", page);
         if(Objects.isNull(page)){
             return;
         }
         // 关闭 Page 对象
         if (!page.isClosed()) {
             page.close();
+            log.info("Close Page '{}'.", page);
         }
     }
 
@@ -59,6 +63,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         // 借用 BrowserContextPool 中的 BrowserContext 对象创建 Page 对象
         BrowserContext browserContext = browserContextPool.borrowObject();
         Page page = browserContext.newPage();
+        log.info("Create Page Instance '{}'.", page);
         return new DefaultPooledObject<>(page);
     }
 
@@ -71,17 +76,17 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public void passivateObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
+        log.info("Return Page Instance '{}'.", page);
+        if(Objects.isNull(page)){
+            return;
+        }
         // 归还对象时的逻辑，执行一些清理操作
         page.evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
+        log.info("Return Page Instance : clear localStorage success");
         page.navigate("about:blank");
-        // 从 BROWSER_CONTEXT_MAP 中获得 Page 对应的 BrowserContext 对象
-        BrowserContext browserContext = page.context();
-        // 如果 BrowserContext 对象仍然连接，则归还到池中
-        if(browserContext.browser().isConnected()){
-            browserContextPool.returnObject(browserContext);
-        } else {
-            browserContextPool.invalidateObject(browserContext);
-        }
+        log.info("Return Page Instance: navigate to 'about:blank' success .", page);
+        // 归还 BrowserContext 到池中
+        browserContextPool.returnObject(page.context());
     }
 
 
@@ -97,14 +102,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public boolean validateObject(PooledObject<Page> p) {
         // 验证对象的有效性，检查对象是否为空且未关闭
         Page page = p.getObject();
-        if(Objects.isNull(page) || page.isClosed()){
+        Boolean isValidated = Objects.isNull(page) || page.isClosed();
+        if(!isValidated){
+            log.info("Validate Page : {}, isValidated : {}", page, isValidated);
             return Boolean.FALSE;
         }
         BrowserContext browserContext = page.context();
-        if (browserContext == null) {
-            return Boolean.FALSE;
-        }
-        return browserContext.browser().isConnected();
+        isValidated = Objects.isNull(browserContext) || browserContext.browser().isConnected();
+        log.info("Validate Page : {}, browserContext : {}", page, browserContext);
+        return isValidated;
     }
 
 }
