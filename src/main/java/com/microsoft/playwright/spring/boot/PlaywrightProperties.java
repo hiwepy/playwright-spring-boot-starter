@@ -47,8 +47,6 @@ public class PlaywrightProperties {
 
 	private ObjectPoolConfig browserPool = new ObjectPoolConfig();
 
-	private ObjectPoolConfig pagePool = new ObjectPoolConfig();
-
 	public enum BrowserType {
 		CHROMIUM,
 		FIREFOX,

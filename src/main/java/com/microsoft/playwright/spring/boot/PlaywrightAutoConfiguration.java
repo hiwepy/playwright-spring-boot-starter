@@ -1,15 +1,15 @@
 package com.microsoft.playwright.spring.boot;
 
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -50,25 +50,6 @@ public class PlaywrightAutoConfiguration {
         // 3、创建 BrowserContextPool 对象
         BrowserContextPool browserContextPool = new BrowserContextPool(factory, poolConfig);
         return browserContextPool;
-    }
-
-    @Bean(name = "browserPagePool")
-    @ConditionalOnMissingBean
-    public BrowserPagePool browserPagePool(PlaywrightProperties playwrightProperties,
-                                           ObjectProvider<BrowserContextPool> browserContextPoolProvider){
-
-        // 1、创建 BrowserPagePooledObjectFactory 对象，并传入 BrowserContextPool
-        BrowserPagePooledObjectFactory factory = new BrowserPagePooledObjectFactory(browserContextPoolProvider.getObject());
-
-        // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<Page> poolConfig = new GenericObjectPoolConfig<>();
-        this.copyProperties(playwrightProperties.getPagePool(), poolConfig);
-        poolConfig.setJmxEnabled(Boolean.FALSE);
-        poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserPagePool.class));
-
-        // 3、创建 BrowserPagePool 对象，传入 factory 和 poolConfig
-        BrowserPagePool pagePool = new BrowserPagePool(factory, poolConfig);
-        return pagePool;
     }
 
     protected void copyProperties(PlaywrightProperties.LaunchOptions source, BrowserType.LaunchOptions options) {

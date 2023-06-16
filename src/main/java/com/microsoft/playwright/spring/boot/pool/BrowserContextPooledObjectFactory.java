@@ -7,6 +7,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +55,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void activateObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
-        if(Objects.nonNull(browserContext) && browserContext.browser().isConnected()){
+        log.info("Activate BrowserContext Instance '{}'.", browserContext);
+        if(Objects.nonNull(browserContext)){
             browserContext.clearCookies();
         }
     }
@@ -73,6 +75,16 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         if (playwright != null) {
             playwright.close();
             log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
+        }
+        // 关闭所有页面
+        List<Page> pages = browserContext.pages();
+        if (!pages.isEmpty()) {
+            for (Page page : pages) {
+                if (page.isClosed()) {
+                    continue;
+                }
+                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
+            }
         }
     }
 
@@ -102,10 +114,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         log.info("Create BrowserContext Instance '{}', browserType : {} Success.", browserContext, browserType);
         PLAYWRIGHT_MAP.put(browserContext, playwright);
-        // 创建一个默认的页面
-        Page page = browserContext.newPage();
-        page.navigate("about:blank");
-        log.info("Create default Page Of browserContext And navigate to 'about:blank' success.");
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -120,12 +128,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         BrowserContext browserContext = p.getObject();
         log.info("Return BrowserContext Instance '{}'.", browserContext);
         if(Objects.nonNull(browserContext)){
-            browserContext.pages().get(0).evaluate("try {window.localStorage.clear()} catch(e){console.log(e)}");
-            log.info("Return BrowserContext Instance : clear localStorage success");
             browserContext.clearCookies();
             log.info("Return BrowserContext Instance : clear cookies success");
-            browserContext.pages().get(0).navigate("about:blank");
-            log.info("Return BrowserContext Instance : navigate to 'about:blank' success");
         }
     }
 
@@ -140,7 +144,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
         BrowserContext browserContext = p.getObject();
-        Boolean isValidated = Objects.nonNull(browserContext);
+        boolean isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
         log.info("Validate BrowserContext : {}, isValidated : {}", browserContext, isValidated);
         return isValidated;
     }
