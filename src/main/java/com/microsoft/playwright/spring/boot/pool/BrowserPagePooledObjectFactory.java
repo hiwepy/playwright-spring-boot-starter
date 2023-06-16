@@ -102,14 +102,14 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public boolean validateObject(PooledObject<Page> p) {
         // 验证对象的有效性，检查对象是否为空且未关闭
         Page page = p.getObject();
-        Boolean isValidated = Objects.isNull(page) || page.isClosed();
+        Boolean isValidated = Objects.nonNull(page) && !page.isClosed();
         if(!isValidated){
             log.info("Validate Page : {}, isValidated : {}", page, isValidated);
             return Boolean.FALSE;
         }
         BrowserContext browserContext = page.context();
-        isValidated = Objects.isNull(browserContext) || browserContext.browser().isConnected();
-        log.info("Validate Page : {}, browserContext : {}", page, browserContext);
+        isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
+        log.info("Validate Page : {}, browserContext : {}, isValidated : {}", page, browserContext, isValidated);
         return isValidated;
     }
 
