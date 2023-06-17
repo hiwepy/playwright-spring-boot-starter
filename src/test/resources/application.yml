@@ -1,3 +1,18 @@
+################################################################################################################
+###Playwright（PlaywrightProperties）配置：
+################################################################################################################
 playwright:
-  page-pool:
-    max-workers: 1
+  browser-pool:
+    max-idle: 5
+    min-idle: 40
+    max-total: 40
+    test-on-borrow: true
+    test-while-idle: true
+    test-on-return: true
+  launch-options:
+    headless: true
+    args:
+      - '--start-maximized'
+      - '--ignore-certificate-errors'
+  new-context-options:
+    ignore-https-errors: true
