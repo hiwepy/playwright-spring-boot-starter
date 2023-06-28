@@ -20,7 +20,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * Playwright管理容器
      */
     private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
-    private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.CHROMIUM;
+    private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.chromium;
     private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
     private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
 
@@ -99,20 +99,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         Playwright playwright = Playwright.create();
         log.info("Create Playwright Instance '{}' Success.", playwright);
         // 创建一个新的浏览器上下文
-        BrowserContext browserContext;
-        switch (browserType) {
-            case CHROMIUM:
-                browserContext = playwright.chromium().launch(launchOptions).newContext(newContextOptions);
-                break;
-            case FIREFOX:
-                browserContext = playwright.firefox().launch(launchOptions).newContext(newContextOptions);
-                break;
-            case WEBKIT:
-                browserContext = playwright.webkit().launch(launchOptions).newContext(newContextOptions);
-                break;
-            default:
-                throw new IllegalArgumentException("browserType is not supported");
-        }
+        BrowserContext browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
+                .launch(launchOptions)
+                .newContext(newContextOptions);
         log.info("Create BrowserContext Instance '{}', browserType : {} Success.", browserContext, browserType);
         PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);

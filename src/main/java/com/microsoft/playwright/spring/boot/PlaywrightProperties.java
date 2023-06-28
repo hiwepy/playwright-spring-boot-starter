@@ -37,7 +37,7 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 
-	private BrowserType browser = BrowserType.CHROMIUM;
+	private BrowserType browser = BrowserType.chromium;
 
 	private ConnectOptions connectOptions = new ConnectOptions();
 
@@ -48,9 +48,9 @@ public class PlaywrightProperties {
 	private ObjectPoolConfig browserPool = new ObjectPoolConfig();
 
 	public enum BrowserType {
-		CHROMIUM,
-		FIREFOX,
-		WEBKIT
+		chromium,
+		firefox,
+		webkit
 	}
 
 	@Data

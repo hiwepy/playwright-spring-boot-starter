@@ -1,10 +1,9 @@
 package com.microsoft.playwright.spring.boot.utils;
 
-import com.microsoft.playwright.ElementHandle;
-import com.microsoft.playwright.Mouse;
-import com.microsoft.playwright.Page;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.MouseButton;
+import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -74,6 +73,19 @@ public class PlaywrightUtil {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
+    }
+
+    public static BrowserType getBrowserType(Playwright playwright, PlaywrightProperties.BrowserType browserType) {
+        switch (browserType) {
+            case chromium:
+                return playwright.chromium();
+            case webkit:
+                return playwright.webkit();
+            case firefox:
+                return playwright.firefox();
+            default:
+                throw new IllegalArgumentException("browserType is not supported");
+        }
     }
 
     public static void closePage(Page page) {
