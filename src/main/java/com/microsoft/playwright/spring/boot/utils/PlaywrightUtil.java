@@ -8,6 +8,7 @@ import com.microsoft.playwright.options.MouseButton;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -73,6 +74,17 @@ public class PlaywrightUtil {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
+    }
+
+    public static void closePage(Page page) {
+        try {
+            if (Objects.nonNull(page) && !page.isClosed()){
+                page.close();
+            }
+        } catch (Exception e) {
+            log.error("Close Page Error.", e);
+            // ignore error
+        }
     }
 
 }

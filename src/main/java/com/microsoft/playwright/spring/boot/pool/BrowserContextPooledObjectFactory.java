@@ -2,6 +2,7 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -129,6 +130,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Return BrowserContext Instance '{}'.", browserContext);
         if(Objects.nonNull(browserContext)){
             browserContext.clearCookies();
+            browserContext.pages().forEach(page -> {
+                PlaywrightUtil.closePage(page);
+            });
             log.info("Return BrowserContext Instance : clear cookies success");
         }
     }
