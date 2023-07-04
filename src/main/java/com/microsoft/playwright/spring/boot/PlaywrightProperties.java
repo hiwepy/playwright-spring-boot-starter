@@ -440,7 +440,7 @@ public class PlaywrightProperties {
 		 *    * Chromium's user data directory is the **parent** directory of the "Profile Path" seen at {@code chrome://version}. Pass
 		 *    * an empty string to use a temporary directory instead.
 		 */
-		public String userDataDir = "/tmp";
+		public String userDataRootDir = "/tmp";
 		/**
 		 * Emulates consistent viewport for each page. Defaults to an 1280x720 viewport.  Use {@code null} to disable the
 		 * consistent viewport emulation. Learn more about <a href="https://playwright.dev/java/docs/emulation#viewport">viewport

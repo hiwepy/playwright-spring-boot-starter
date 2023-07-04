@@ -42,13 +42,13 @@ public class PlaywrightAutoConfiguration {
 
                 BrowserType.LaunchPersistentContextOptions launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions();
                 PlaywrightUtil.copyProperties(playwrightProperties.getLaunchPersistentOptions(), launchPersistentOptions);
-                String userDataDir;
-                if(StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataDir())){
-                    userDataDir = playwrightProperties.getLaunchPersistentOptions().getUserDataDir();
+                String userDataRootDir;
+                if(StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())){
+                    userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
                 } else {
-                    userDataDir = System.getProperty("java.io.tmpdir");
+                    userDataRootDir = System.getProperty("java.io.tmpdir");
                 }
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataDir);
+                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataRootDir);
 
             };break;
             default: {

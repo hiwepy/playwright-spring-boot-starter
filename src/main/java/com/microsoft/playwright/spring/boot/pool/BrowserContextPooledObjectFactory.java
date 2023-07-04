@@ -24,6 +24,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * Playwright管理容器
      */
     private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
+    private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
     /**
      * 浏览器类型
      */
@@ -40,7 +41,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * 非无痕模式启动浏览器参数
      */
     private BrowserType.LaunchPersistentContextOptions launchPersistentOptions;
-    private File userDataDir;
+    private String userDataRootDir;
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchOptions launchOptions,
                                              Browser.NewContextOptions newContextOptions) {
@@ -59,7 +60,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchPersistentContextOptions launchPersistentOptions,
-                                             String userDataDir) {
+                                             String userDataRootDir) {
         if (Objects.nonNull(browserType)) {
             this.browserType = browserType;
         }
@@ -68,10 +69,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         } else {
             this.launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
         }
-        if (StringUtils.hasText(userDataDir)) {
-            this.userDataDir = new File(userDataDir, String.valueOf(System.currentTimeMillis()));
+        if (StringUtils.hasText(userDataRootDir)) {
+            this.userDataRootDir = userDataRootDir;
         } else {
-            this.userDataDir = new File(System.getProperty("java.io.tmpdir"), String.valueOf(System.currentTimeMillis()));
+            this.userDataRootDir = System.getProperty("java.io.tmpdir");
         }
     }
 
@@ -126,6 +127,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     private void cleanupGarbage(BrowserContext browserContext) {
         // 删除用户数据目录
+        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
         if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
             try {
                 FileUtils.deleteDirectory(userDataDir);
@@ -147,17 +149,20 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Create Playwright Instance '{}' Success.", playwright);
         BrowserContext browserContext = null;
         if (Objects.nonNull(launchPersistentOptions)) {
-            if(!this.userDataDir.exists()){
-                this.userDataDir.mkdirs();
+            File userDataDir = new File(userDataRootDir, String.valueOf(System.currentTimeMillis()));
+            if(!userDataDir.exists()){
+                userDataDir.mkdirs();
             }
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
                     .launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
+            USER_DATA_DIR_MAP.put(browserContext, userDataDir);
+            log.info("Create Persistent BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
         } else {
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
                     .launch(launchOptions)
                     .newContext(newContextOptions);
+            log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
         }
-        log.info("Create BrowserContext Instance '{}', browserType : {} Success.", browserContext, browserType);
         PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
