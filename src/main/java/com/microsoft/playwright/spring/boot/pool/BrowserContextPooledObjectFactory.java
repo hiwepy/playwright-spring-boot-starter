@@ -7,7 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.springframework.util.StringUtils;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,19 +23,23 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * Playwright管理容器
      */
     private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
+    /**
+     * 浏览器类型
+     */
     private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.chromium;
-    private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
+    /**
+     * 无痕模式启动浏览器参数
+     */
+    private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true);
+    /**
+     * 创建新的浏览器上下文参数
+     */
     private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
-
-    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType) {
-        this(browserType, null, null);
-    }
-
-    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
-                                             BrowserType.LaunchOptions launchOptions) {
-        this(browserType, launchOptions, null);
-    }
-
+    /**
+     * 非无痕模式启动浏览器参数
+     */
+    private BrowserType.LaunchPersistentContextOptions launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
+    private Path userDataDir;
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchOptions launchOptions,
                                              Browser.NewContextOptions newContextOptions) {
@@ -44,6 +51,22 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         if (Objects.nonNull(newContextOptions)) {
             this.newContextOptions = newContextOptions;
+        }
+    }
+
+    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
+                                             BrowserType.LaunchPersistentContextOptions launchPersistentOptions,
+                                             Path userDataDir) {
+        if (Objects.nonNull(browserType)) {
+            this.browserType = browserType;
+        }
+        if (Objects.nonNull(launchPersistentOptions)) {
+            this.launchPersistentOptions = launchPersistentOptions;
+        }
+        if (Objects.nonNull(userDataDir)) {
+            this.userDataDir = userDataDir;
+        } else {
+            this.userDataDir = Paths.get(System.getProperty("java.io.tmpdir"));
         }
     }
 
@@ -98,10 +121,19 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     public PooledObject<BrowserContext> makeObject() throws Exception {
         Playwright playwright = Playwright.create();
         log.info("Create Playwright Instance '{}' Success.", playwright);
-        // 创建一个新的浏览器上下文
-        BrowserContext browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
-                .launch(launchOptions)
-                .newContext(newContextOptions);
+        BrowserContext browserContext = null;
+        if (Objects.nonNull(launchPersistentOptions)) {
+            String userDataDirStr = PlaywrightUtil.getUerDataDir();
+            if(StringUtils.hasText(userDataDirStr)){
+                userDataDir = Paths.get(userDataDirStr);
+            }
+            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
+                    .launchPersistentContext(userDataDir , launchPersistentOptions);
+        } else {
+            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
+                    .launch(launchOptions)
+                    .newContext(newContextOptions);
+        }
         log.info("Create BrowserContext Instance '{}', browserType : {} Success.", browserContext, browserType);
         PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);

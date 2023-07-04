@@ -364,6 +364,7 @@
 		<commons-io.version>2.13.0</commons-io.version>
 		<playwright.version>1.35.0</playwright.version>
 		<spring-biz.version>1.1.5.RELEASE</spring-biz.version>
+		<transmittable-thread-local.version>2.14.2</transmittable-thread-local.version>
 		<maven.version>3.0</maven.version>
        	<maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
@@ -403,6 +404,12 @@
 				<groupId>com.github.hiwepy</groupId>
 				<artifactId>spring-biz</artifactId>
 				<version>${spring-biz.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/com.alibaba/transmittable-thread-local -->
+			<dependency>
+				<groupId>com.alibaba</groupId>
+				<artifactId>transmittable-thread-local</artifactId>
+				<version>${transmittable-thread-local.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -484,6 +491,10 @@
 		<dependency>
 			<groupId>com.github.hiwepy</groupId>
 			<artifactId>spring-biz</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>transmittable-thread-local</artifactId>
 		</dependency>
 
 	</dependencies>
