@@ -10,9 +10,8 @@ import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.util.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,7 +40,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * 非无痕模式启动浏览器参数
      */
     private BrowserType.LaunchPersistentContextOptions launchPersistentOptions;
-    private Path userDataDir;
+    private File userDataDir;
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchOptions launchOptions,
                                              Browser.NewContextOptions newContextOptions) {
@@ -70,9 +69,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             this.launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
         }
         if (StringUtils.hasText(userDataDir)) {
-            this.userDataDir = Paths.get(userDataDir, String.valueOf(System.currentTimeMillis()));
+            this.userDataDir = new File(userDataDir, String.valueOf(System.currentTimeMillis()));
         } else {
-            this.userDataDir = Paths.get(System.getProperty("java.io.tmpdir"), String.valueOf(System.currentTimeMillis()));
+            this.userDataDir = new File(System.getProperty("java.io.tmpdir"), String.valueOf(System.currentTimeMillis()));
         }
     }
 
@@ -127,9 +126,9 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     private void cleanupGarbage(BrowserContext browserContext) {
         // 删除用户数据目录
-        if (Objects.nonNull(userDataDir)) {
+        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
             try {
-                FileUtils.deleteDirectory(userDataDir.toFile());
+                FileUtils.deleteDirectory(userDataDir);
                 log.info("Deleted user data directory: {}", userDataDir);
             } catch (IOException e) {
                 log.error("Failed to delete user data directory: {}", userDataDir, e);
@@ -148,12 +147,11 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Create Playwright Instance '{}' Success.", playwright);
         BrowserContext browserContext = null;
         if (Objects.nonNull(launchPersistentOptions)) {
-            String userDataDirStr = PlaywrightUtil.getUerDataDir();
-            if(StringUtils.hasText(userDataDirStr)){
-                this.userDataDir = Paths.get(userDataDirStr, String.valueOf(System.currentTimeMillis()));
+            if(!this.userDataDir.exists()){
+                this.userDataDir.mkdirs();
             }
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
-                    .launchPersistentContext(userDataDir , launchPersistentOptions);
+                    .launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
         } else {
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
                     .launch(launchOptions)
