@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 
@@ -38,12 +37,12 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 
-	private BrowserType browser = BrowserType.chromium;
+	private BrowserType browserType = BrowserType.chromium;
 
 	/**
 	 * browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
-	public BrowserMode mode = BrowserMode.incognito;
+	public BrowserMode browserMode = BrowserMode.incognito;
 
 	private ConnectOptions connectOptions = new ConnectOptions();
 

@@ -37,7 +37,7 @@ public class PlaywrightAutoConfiguration {
         PlaywrightUtil.copyProperties(playwrightProperties.getNewContextOptions(), newContextOptions);
 
         BrowserContextPooledObjectFactory factory;
-        switch (playwrightProperties.getMode()){
+        switch (playwrightProperties.getBrowserMode()){
             case persistent: {
 
                 BrowserType.LaunchPersistentContextOptions launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions();
@@ -48,7 +48,7 @@ public class PlaywrightAutoConfiguration {
                 } else {
                     userDataDir = System.getProperty("java.io.tmpdir");
                 }
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowser(), launchPersistentOptions, Paths.get(userDataDir));
+                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, Paths.get(userDataDir));
 
             };break;
             default: {
@@ -56,7 +56,7 @@ public class PlaywrightAutoConfiguration {
                 BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions();
                 PlaywrightUtil.copyProperties(playwrightProperties.getLaunchOptions(), launchOptions);
 
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowser(), launchOptions, newContextOptions);
+                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions, newContextOptions);
 
             };break;
         }
