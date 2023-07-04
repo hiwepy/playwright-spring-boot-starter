@@ -16,22 +16,28 @@
 package com.microsoft.playwright.spring.boot.hooks;
 
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 
 import java.util.Objects;
 
 public class PlaywrightHook extends Thread{
 
-	private Playwright playwright;
+	private BrowserContextPooledObjectFactory factory;
 	private long awaitTerminateMillis;
-	public PlaywrightHook(Playwright playwright) {
+	public PlaywrightHook(BrowserContextPooledObjectFactory factory, long awaitTerminateMillis) {
 		this.setName("playwright-shutdown-hook");
-		this.playwright = playwright;
+		this.factory = factory;
+		this.awaitTerminateMillis = awaitTerminateMillis;
 	}
 	
 	@Override
 	public void run() {
-		if(Objects.nonNull(playwright)){
-			playwright.close();
+		if(Objects.nonNull(factory)){
+			try {
+				factory.close();
+			} catch (Exception e) {
+
+			}
 		}
 	}
 	

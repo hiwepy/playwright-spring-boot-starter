@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.hooks.PlaywrightHook;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
@@ -17,9 +18,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @Configuration
 @ConditionalOnClass({ Playwright.class, PooledObjectFactory.class })
@@ -49,7 +47,7 @@ public class PlaywrightAutoConfiguration {
                     userDataRootDir = System.getProperty("java.io.tmpdir");
                 }
                 factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataRootDir);
-
+                Runtime.getRuntime().addShutdownHook(new PlaywrightHook(factory, 0));
             };break;
             default: {
 

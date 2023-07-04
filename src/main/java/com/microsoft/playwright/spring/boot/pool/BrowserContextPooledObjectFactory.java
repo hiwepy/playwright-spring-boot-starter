@@ -103,17 +103,34 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         if (Objects.isNull(browserContext)) {
             return;
         }
-        browserContext.clearCookies();
-        browserContext.clearPermissions();
-        // 额外的清理逻辑
-        cleanupGarbage(browserContext);
+        // Cleanup browser context
+        cleanupBrowserContext(browserContext);
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
         Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
         if (playwright != null) {
             playwright.close();
             log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
-        // 关闭所有页面
+    }
+
+    public void cleanupBrowserContext(BrowserContext browserContext) {
+        if (Objects.isNull(browserContext)) {
+            return;
+        }
+        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
+        browserContext.clearCookies();
+        log.info("Cleanup BrowserContext Permissions '{}'.", browserContext);
+        browserContext.clearPermissions();
+        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
+        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
+            log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
+            try {
+                FileUtils.deleteDirectory(userDataDir);
+                log.info("Deleted user data directory: {}", userDataDir);
+            } catch (IOException e) {
+                log.error("Failed to delete user data directory: {}", userDataDir, e);
+            }
+        }
         List<Page> pages = browserContext.pages();
         if (!pages.isEmpty()) {
             for (Page page : pages) {
@@ -121,19 +138,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                     continue;
                 }
                 log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
-            }
-        }
-    }
-
-    private void cleanupGarbage(BrowserContext browserContext) {
-        // 删除用户数据目录
-        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
-        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
-            try {
-                FileUtils.deleteDirectory(userDataDir);
-                log.info("Deleted user data directory: {}", userDataDir);
-            } catch (IOException e) {
-                log.error("Failed to delete user data directory: {}", userDataDir, e);
             }
         }
     }
@@ -210,9 +214,14 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void close() throws Exception {
         PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
-            browserContext.close();
-            playwright.close();
+            // Cleanup browser context
+            cleanupBrowserContext(browserContext);
+            if (playwright != null) {
+                playwright.close();
+                log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
+            }
         });
+
     }
 
 }
