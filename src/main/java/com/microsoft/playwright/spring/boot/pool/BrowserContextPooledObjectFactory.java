@@ -4,11 +4,13 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -58,7 +60,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchPersistentContextOptions launchPersistentOptions,
-                                             Path userDataDir) {
+                                             String userDataDir) {
         if (Objects.nonNull(browserType)) {
             this.browserType = browserType;
         }
@@ -67,10 +69,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         } else {
             this.launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
         }
-        if (Objects.nonNull(userDataDir)) {
-            this.userDataDir = userDataDir;
+        if (StringUtils.hasText(userDataDir)) {
+            this.userDataDir = Paths.get(userDataDir, String.valueOf(System.currentTimeMillis()));
         } else {
-            this.userDataDir = Paths.get(System.getProperty("java.io.tmpdir"));
+            this.userDataDir = Paths.get(System.getProperty("java.io.tmpdir"), String.valueOf(System.currentTimeMillis()));
         }
     }
 
@@ -98,6 +100,13 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
+        if (Objects.isNull(browserContext)) {
+            return;
+        }
+        browserContext.clearCookies();
+        browserContext.clearPermissions();
+        // 额外的清理逻辑
+        cleanupGarbage(browserContext);
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
         Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
         if (playwright != null) {
@@ -116,6 +125,18 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
     }
 
+    private void cleanupGarbage(BrowserContext browserContext) {
+        // 删除用户数据目录
+        if (Objects.nonNull(userDataDir)) {
+            try {
+                FileUtils.deleteDirectory(userDataDir.toFile());
+                log.info("Deleted user data directory: {}", userDataDir);
+            } catch (IOException e) {
+                log.error("Failed to delete user data directory: {}", userDataDir, e);
+            }
+        }
+    }
+
     /**
      * 创建池中物（playwright）
      * @return
@@ -129,7 +150,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         if (Objects.nonNull(launchPersistentOptions)) {
             String userDataDirStr = PlaywrightUtil.getUerDataDir();
             if(StringUtils.hasText(userDataDirStr)){
-                userDataDir = Paths.get(userDataDirStr);
+                this.userDataDir = Paths.get(userDataDirStr, String.valueOf(System.currentTimeMillis()));
             }
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
                     .launchPersistentContext(userDataDir , launchPersistentOptions);

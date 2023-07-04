@@ -48,7 +48,7 @@ public class PlaywrightAutoConfiguration {
                 } else {
                     userDataDir = System.getProperty("java.io.tmpdir");
                 }
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, Paths.get(userDataDir));
+                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataDir);
 
             };break;
             default: {
