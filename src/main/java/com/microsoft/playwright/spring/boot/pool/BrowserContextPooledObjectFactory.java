@@ -30,7 +30,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     /**
      * 无痕模式启动浏览器参数
      */
-    private BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true);
+    private BrowserType.LaunchOptions launchOptions;
     /**
      * 创建新的浏览器上下文参数
      */
@@ -38,7 +38,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     /**
      * 非无痕模式启动浏览器参数
      */
-    private BrowserType.LaunchPersistentContextOptions launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
+    private BrowserType.LaunchPersistentContextOptions launchPersistentOptions;
     private Path userDataDir;
     public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
                                              BrowserType.LaunchOptions launchOptions,
@@ -48,6 +48,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         if (Objects.nonNull(launchOptions)) {
             this.launchOptions = launchOptions;
+        } else {
+            this.launchOptions = new BrowserType.LaunchOptions().setHeadless(true);
         }
         if (Objects.nonNull(newContextOptions)) {
             this.newContextOptions = newContextOptions;
@@ -62,6 +64,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         if (Objects.nonNull(launchPersistentOptions)) {
             this.launchPersistentOptions = launchPersistentOptions;
+        } else {
+            this.launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
         }
         if (Objects.nonNull(userDataDir)) {
             this.userDataDir = userDataDir;
@@ -169,7 +173,12 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
         BrowserContext browserContext = p.getObject();
-        boolean isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
+        boolean isValidated;
+        if (Objects.nonNull(launchOptions)) {
+            isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
+        } else {
+            isValidated = Objects.nonNull(browserContext);
+        }
         log.info("Validate BrowserContext : {}, isValidated : {}", browserContext, isValidated);
         return isValidated;
     }
