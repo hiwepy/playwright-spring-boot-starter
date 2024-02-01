@@ -5,6 +5,7 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.hooks.PlaywrightHook;
+import com.microsoft.playwright.spring.boot.hooks.PlaywrightInstall;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
@@ -67,6 +68,11 @@ public class PlaywrightAutoConfiguration {
 
         // 3、创建 BrowserContextPool 对象
         BrowserContextPool browserContextPool = new BrowserContextPool(factory, poolConfig);
+
+        // 4、触发浏览器安装
+        Thread installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
+        installer.start();
+
         return browserContextPool;
     }
 

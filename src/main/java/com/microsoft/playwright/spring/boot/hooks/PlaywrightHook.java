@@ -15,7 +15,6 @@
  */
 package com.microsoft.playwright.spring.boot.hooks;
 
-import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 
 import java.util.Objects;
@@ -29,7 +28,7 @@ public class PlaywrightHook extends Thread{
 		this.factory = factory;
 		this.awaitTerminateMillis = awaitTerminateMillis;
 	}
-	
+
 	@Override
 	public void run() {
 		if(Objects.nonNull(factory)){
@@ -40,5 +39,5 @@ public class PlaywrightHook extends Thread{
 			}
 		}
 	}
-	
+
 }

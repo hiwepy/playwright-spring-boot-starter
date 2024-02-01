@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ *
  * @author ： <a href="https://github.com/hiwepy">hiwepy</a>
  */
 @ConfigurationProperties(PlaywrightProperties.PREFIX)
@@ -36,8 +36,11 @@ import java.util.Map;
 public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
+	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
 
 	private BrowserType browserType = BrowserType.chromium;
+
+	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
 	/**
 	 * browser mode. Defaults to {@link BrowserMode#incognito incognito}.
