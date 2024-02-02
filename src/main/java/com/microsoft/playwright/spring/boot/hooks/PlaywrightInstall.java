@@ -22,12 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
 
 @Slf4j
-public class PlaywrightInstall extends Thread{
-
+public class PlaywrightInstall implements Runnable {
+	private volatile boolean isInstalled = false;
 	private BrowserContextPool browserContextPool;
 	private PlaywrightProperties playwrightProperties;
 	public PlaywrightInstall(BrowserContextPool browserContextPool, PlaywrightProperties playwrightProperties) {
-		this.setName("playwright-install-hook");
 		this.browserContextPool = browserContextPool;
 		this.playwrightProperties = playwrightProperties;
 	}
@@ -35,14 +34,20 @@ public class PlaywrightInstall extends Thread{
 	@Override
 	public void run() {
 		if(Objects.nonNull(browserContextPool) && Objects.nonNull(playwrightProperties)){
-			// 4、触发浏览器安装
 			try {
+				// 1、触发浏览器安装
 				System.setProperty("PLAYWRIGHT_DOWNLOAD_HOST", playwrightProperties.getDownloadHost());
 				browserContextPool.borrowObject();
+				// 2、安装完成后
+				isInstalled = true;
 			} catch (Exception e) {
 				log.error("Playwright install error", e);
 			}
 		}
+	}
+
+	public boolean isInstalled() {
+		return isInstalled;
 	}
 
 }
