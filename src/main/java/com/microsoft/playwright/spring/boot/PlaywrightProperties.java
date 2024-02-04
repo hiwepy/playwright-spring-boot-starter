@@ -16,11 +16,14 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.*;
 import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -37,7 +40,7 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
-
+	private static PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 	private BrowserType browserType = BrowserType.chromium;
 
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
@@ -643,6 +646,193 @@ public class PlaywrightProperties {
 		 * operating system. It makes the execution of the tests non-deterministic.
 		 */
 		public ViewportSize viewportSize;
+
+	}
+
+	@Data
+	public static class PageNavigateOptions {
+		/**
+		 * Referer header value. If provided it will take preference over the referer header value set by {@link
+		 * Page#setExtraHTTPHeaders Page.setExtraHTTPHeaders()}.
+		 */
+		public String referer;
+		/**
+		 * Maximum operation time in milliseconds, defaults to 30 seconds, pass {@code 0} to disable timeout. The default value can
+		 * be changed by using the {@link BrowserContext#setDefaultNavigationTimeout BrowserContext.setDefaultNavigationTimeout()},
+		 * {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()}, {@link Page#setDefaultNavigationTimeout
+		 * Page.setDefaultNavigationTimeout()} or {@link Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
+		 */
+		public Double timeout;
+		/**
+		 * When to consider operation succeeded, defaults to {@code load}. Events can be either:
+		 * <ul>
+		 * <li> {@code "domcontentloaded"} - consider operation to be finished when the {@code DOMContentLoaded} event is fired.</li>
+		 * <li> {@code "load"} - consider operation to be finished when the {@code load} event is fired.</li>
+		 * <li> {@code "networkidle"} - **DISCOURAGED** consider operation to be finished when there are no network connections for at
+		 * least {@code 500} ms. Don't use this method for testing, rely on web assertions to assess readiness instead.</li>
+		 * <li> {@code "commit"} - consider operation to be finished when network response is received and the document started loading.</li>
+		 * </ul>
+		 */
+		public WaitUntilState waitUntil;
+
+		public Page.NavigateOptions newPageOptions(){
+			Page.NavigateOptions options = new Page.NavigateOptions();
+			map.from(referer).whenHasText().to(options::setReferer);
+			map.from(timeout).whenNonNull().to(options::setTimeout);
+			map.from(waitUntil).whenNonNull().to(options::setWaitUntil);
+			return options;
+		};
+
+	}
+
+	@Data
+	public static class PageScreenshotOptions {
+
+		/**
+		 * When set to {@code "disabled"}, stops CSS animations, CSS transitions and Web Animations. Animations get different
+		 * treatment depending on their duration:
+		 * <ul>
+		 * <li> finite animations are fast-forwarded to completion, so they'll fire {@code transitionend} event.</li>
+		 * <li> infinite animations are canceled to initial state, and then played over after the screenshot.</li>
+		 * </ul>
+		 *
+		 * <p> Defaults to {@code "allow"} that leaves animations untouched.
+		 */
+		public ScreenshotAnimations animations;
+		/**
+		 * When set to {@code "hide"}, screenshot will hide text caret. When set to {@code "initial"}, text caret behavior will not
+		 * be changed.  Defaults to {@code "hide"}.
+		 */
+		public ScreenshotCaret caret;
+		/**
+		 * An object which specifies clipping of the resulting image.
+		 */
+		public Clip clip;
+		/**
+		 * When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Defaults to {@code
+		 * false}.
+		 */
+		public Boolean fullPage;
+		/**
+		 * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink box
+		 * {@code #FF00FF} (customized by {@code maskColor}) that completely covers its bounding box.
+		 */
+		public List<Locator> mask;
+		/**
+		 * Specify the color of the overlay box for masked elements, in <a
+		 * href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color format</a>. Default color is pink {@code
+		 * #FF00FF}.
+		 */
+		public String maskColor;
+		/**
+		 * Hides default white background and allows capturing screenshots with transparency. Not applicable to {@code jpeg}
+		 * images. Defaults to {@code false}.
+		 */
+		public Boolean omitBackground;
+		/**
+		 * The file path to save the image to. The screenshot type will be inferred from file extension. If {@code path} is a
+		 * relative path, then it is resolved relative to the current working directory. If no path is provided, the image won't be
+		 * saved to the disk.
+		 */
+		public Path path;
+		/**
+		 * The quality of the image, between 0-100. Not applicable to {@code png} images.
+		 */
+		public Integer quality;
+		/**
+		 * When set to {@code "css"}, screenshot will have a single pixel per each css pixel on the page. For high-dpi devices,
+		 * this will keep screenshots small. Using {@code "device"} option will produce a single pixel per each device pixel, so
+		 * screenshots of high-dpi devices will be twice as large or even larger.
+		 *
+		 * <p> Defaults to {@code "device"}.
+		 */
+		public ScreenshotScale scale;
+		/**
+		 * Maximum time in milliseconds. Defaults to {@code 30000} (30 seconds). Pass {@code 0} to disable timeout. The default
+		 * value can be changed by using the {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()} or {@link
+		 * Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
+		 */
+		public Double timeout;
+		/**
+		 * Specify screenshot type, defaults to {@code png}.
+		 */
+		public ScreenshotType type;
+
+		public Page.ScreenshotOptions newPageOptions(){
+			Page.ScreenshotOptions options = new Page.ScreenshotOptions();
+			return options;
+		};
+
+	}
+
+
+	public static class ElementScreenshotOptions {
+
+		/**
+		 * When set to {@code "disabled"}, stops CSS animations, CSS transitions and Web Animations. Animations get different
+		 * treatment depending on their duration:
+		 * <ul>
+		 * <li> finite animations are fast-forwarded to completion, so they'll fire {@code transitionend} event.</li>
+		 * <li> infinite animations are canceled to initial state, and then played over after the screenshot.</li>
+		 * </ul>
+		 *
+		 * <p> Defaults to {@code "allow"} that leaves animations untouched.
+		 */
+		public ScreenshotAnimations animations;
+		/**
+		 * When set to {@code "hide"}, screenshot will hide text caret. When set to {@code "initial"}, text caret behavior will not
+		 * be changed.  Defaults to {@code "hide"}.
+		 */
+		public ScreenshotCaret caret;
+		/**
+		 * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink box
+		 * {@code #FF00FF} (customized by {@code maskColor}) that completely covers its bounding box.
+		 */
+		public List<Locator> mask;
+		/**
+		 * Specify the color of the overlay box for masked elements, in <a
+		 * href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value">CSS color format</a>. Default color is pink {@code
+		 * #FF00FF}.
+		 */
+		public String maskColor;
+		/**
+		 * Hides default white background and allows capturing screenshots with transparency. Not applicable to {@code jpeg}
+		 * images. Defaults to {@code false}.
+		 */
+		public Boolean omitBackground;
+		/**
+		 * The file path to save the image to. The screenshot type will be inferred from file extension. If {@code path} is a
+		 * relative path, then it is resolved relative to the current working directory. If no path is provided, the image won't be
+		 * saved to the disk.
+		 */
+		public Path path;
+		/**
+		 * The quality of the image, between 0-100. Not applicable to {@code png} images.
+		 */
+		public Integer quality;
+		/**
+		 * When set to {@code "css"}, screenshot will have a single pixel per each css pixel on the page. For high-dpi devices,
+		 * this will keep screenshots small. Using {@code "device"} option will produce a single pixel per each device pixel, so
+		 * screenshots of high-dpi devices will be twice as large or even larger.
+		 *
+		 * <p> Defaults to {@code "device"}.
+		 */
+		public ScreenshotScale scale;
+		/**
+		 * Maximum time in milliseconds. Defaults to {@code 30000} (30 seconds). Pass {@code 0} to disable timeout. The default
+		 * value can be changed by using the {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()} or {@link
+		 * Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
+		 */
+		public Double timeout;
+		/**
+		 * Specify screenshot type, defaults to {@code png}.
+		 */
+		public ScreenshotType type;
+
+		public ElementHandle.ScreenshotOptions newElementOptions(){
+			ElementHandle.ScreenshotOptions options = new ElementHandle.ScreenshotOptions();
+			return options;
+		};
 
 	}
 
