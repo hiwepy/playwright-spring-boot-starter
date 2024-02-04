@@ -760,11 +760,22 @@ public class PlaywrightProperties {
 
 		public Page.ScreenshotOptions newPageOptions(){
 			Page.ScreenshotOptions options = new Page.ScreenshotOptions();
+			map.from(animations).whenNonNull().to(options::setAnimations);
+			map.from(caret).whenNonNull().to(options::setCaret);
+			map.from(clip).whenNonNull().to(options::setClip);
+			map.from(fullPage).whenNonNull().to(options::setFullPage);
+			map.from(mask).whenNonNull().to(options::setMask);
+			map.from(maskColor).whenHasText().to(options::setMaskColor);
+			map.from(omitBackground).whenNonNull().to(options::setOmitBackground);
+			map.from(path).whenNonNull().to(options::setPath);
+			map.from(quality).whenNonNull().to(options::setQuality);
+			map.from(scale).whenNonNull().to(options::setScale);
+			map.from(timeout).whenNonNull().to(options::setTimeout);
+			map.from(type).whenNonNull().to(options::setType);
 			return options;
 		};
 
 	}
-
 
 	public static class ElementScreenshotOptions {
 
@@ -831,6 +842,16 @@ public class PlaywrightProperties {
 
 		public ElementHandle.ScreenshotOptions newElementOptions(){
 			ElementHandle.ScreenshotOptions options = new ElementHandle.ScreenshotOptions();
+			map.from(animations).whenNonNull().to(options::setAnimations);
+			map.from(caret).whenNonNull().to(options::setCaret);
+			map.from(mask).whenNonNull().to(options::setMask);
+			map.from(maskColor).whenHasText().to(options::setMaskColor);
+			map.from(omitBackground).whenNonNull().to(options::setOmitBackground);
+			map.from(path).whenNonNull().to(options::setPath);
+			map.from(quality).whenNonNull().to(options::setQuality);
+			map.from(scale).whenNonNull().to(options::setScale);
+			map.from(timeout).whenNonNull().to(options::setTimeout);
+			map.from(type).whenNonNull().to(options::setType);
 			return options;
 		};
 
