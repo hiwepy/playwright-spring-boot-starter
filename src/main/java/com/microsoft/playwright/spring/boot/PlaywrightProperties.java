@@ -46,19 +46,41 @@ public class PlaywrightProperties {
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
 	/**
-	 * browser mode. Defaults to {@link BrowserMode#incognito incognito}.
+	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
 	public BrowserMode browserMode = BrowserMode.incognito;
-
-	private ConnectOptions connectOptions = new ConnectOptions();
-
-	private LaunchOptions launchOptions = new LaunchOptions();
-
-	private LaunchPersistentOptions launchPersistentOptions = new LaunchPersistentOptions();
-
-	private NewContextOptions newContextOptions = new NewContextOptions();
-
+	/**
+	 * Browser Pool Config
+	 */
 	private ObjectPoolConfig browserPool = new ObjectPoolConfig();
+	/**
+	 * Connect Options
+	 */
+	private ConnectOptions connectOptions = new ConnectOptions();
+	/**
+	 * Launch Options
+	 */
+	private LaunchOptions launchOptions = new LaunchOptions();
+	/**
+	 * Launch Persistent Options
+	 */
+	private LaunchPersistentOptions launchPersistentOptions = new LaunchPersistentOptions();
+	/**
+	 * New Context Options
+	 */
+	private NewContextOptions newContextOptions = new NewContextOptions();
+	/**
+	 * Page Navigate Options
+	 */
+	private PageNavigateOptions pageNavigateOptions = new PageNavigateOptions();
+	/**
+	 * Page Screenshot Options
+	 */
+	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
+	/**
+	 * Page Set Content Options
+	 */
+	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
 
 	public enum BrowserType {
 		chromium,
