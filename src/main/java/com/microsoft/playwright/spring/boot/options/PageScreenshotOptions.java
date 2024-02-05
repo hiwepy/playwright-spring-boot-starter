@@ -86,7 +86,7 @@ public class PageScreenshotOptions {
      */
     public ScreenshotType type;
 
-    public Page.ScreenshotOptions newPageOptions(){
+    public Page.ScreenshotOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Page.ScreenshotOptions options = new Page.ScreenshotOptions();
         map.from(animations).whenNonNull().to(options::setAnimations);

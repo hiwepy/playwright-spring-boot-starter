@@ -36,7 +36,7 @@ public class PageNavigateOptions {
      */
     public WaitUntilState waitUntil = WaitUntilState.NETWORKIDLE;
 
-    public Page.NavigateOptions newPageOptions(){
+    public Page.NavigateOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Page.NavigateOptions options = new Page.NavigateOptions();
         map.from(this.getReferer()).whenHasText().to(options::setReferer);

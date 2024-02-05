@@ -80,7 +80,7 @@ public class ElementScreenshotOptions {
      */
     public ScreenshotType type = ScreenshotType.PNG;
 
-    public ElementHandle.ScreenshotOptions newElementOptions(){
+    public ElementHandle.ScreenshotOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         ElementHandle.ScreenshotOptions options = new ElementHandle.ScreenshotOptions();
         map.from(animations).whenNonNull().to(options::setAnimations);
