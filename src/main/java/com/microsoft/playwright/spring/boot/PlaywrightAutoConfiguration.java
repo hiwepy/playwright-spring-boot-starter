@@ -9,7 +9,6 @@ import com.microsoft.playwright.spring.boot.hooks.PlaywrightInstall;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -32,15 +31,12 @@ public class PlaywrightAutoConfiguration {
 
         // 1、创建 BrowserContextPooledObjectFactory 对象
 
-        Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions();
-        PlaywrightUtil.copyProperties(playwrightProperties.getNewContextOptions(), newContextOptions);
-
+        Browser.NewContextOptions newContextOptions = playwrightProperties.getNewContextOptions().toOptions();
         BrowserContextPooledObjectFactory factory;
         switch (playwrightProperties.getBrowserMode()){
             case persistent: {
 
-                BrowserType.LaunchPersistentContextOptions launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions();
-                PlaywrightUtil.copyProperties(playwrightProperties.getLaunchPersistentOptions(), launchPersistentOptions);
+                BrowserType.LaunchPersistentContextOptions launchPersistentOptions = playwrightProperties.getLaunchPersistentOptions().toOptions();
                 String userDataRootDir;
                 if(StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())){
                     userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
@@ -52,17 +48,14 @@ public class PlaywrightAutoConfiguration {
             };break;
             default: {
 
-                BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions();
-                PlaywrightUtil.copyProperties(playwrightProperties.getLaunchOptions(), launchOptions);
-
+                BrowserType.LaunchOptions launchOptions = playwrightProperties.getLaunchOptions().toOptions();
                 factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions, newContextOptions);
 
             };break;
         }
 
         // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<BrowserContext> poolConfig = new GenericObjectPoolConfig<>();
-        PlaywrightUtil.copyProperties(playwrightProperties.getBrowserPool(), poolConfig);
+        GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
         poolConfig.setJmxEnabled(Boolean.FALSE);
         poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserContextPool.class));
 
