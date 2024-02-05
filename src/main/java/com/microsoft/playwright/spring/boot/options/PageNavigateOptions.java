@@ -5,8 +5,10 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
+@Accessors(chain = true)
 @Data
 public class PageNavigateOptions {
 

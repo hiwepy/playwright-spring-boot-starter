@@ -9,11 +9,13 @@ import com.microsoft.playwright.options.ScreenshotCaret;
 import com.microsoft.playwright.options.ScreenshotScale;
 import com.microsoft.playwright.options.ScreenshotType;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.nio.file.Path;
 import java.util.List;
 
+@Accessors(chain = true)
 @Data
 public class ElementScreenshotOptions {
 

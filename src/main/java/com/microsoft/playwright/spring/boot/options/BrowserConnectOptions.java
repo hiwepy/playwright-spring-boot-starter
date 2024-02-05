@@ -2,10 +2,12 @@ package com.microsoft.playwright.spring.boot.options;
 
 import com.microsoft.playwright.BrowserType;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.util.Map;
 
+@Accessors(chain = true)
 @Data
 public class BrowserConnectOptions {
 

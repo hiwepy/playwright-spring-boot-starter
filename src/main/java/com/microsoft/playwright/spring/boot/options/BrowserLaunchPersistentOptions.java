@@ -6,6 +6,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.*;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.util.CollectionUtils;
 
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+@Accessors(chain = true)
 @Data
 public class BrowserLaunchPersistentOptions {
 
