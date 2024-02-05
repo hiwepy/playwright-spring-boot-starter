@@ -19,7 +19,6 @@ import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.PropertyMapper;
 
 /**
  *
@@ -31,7 +30,6 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
-	private static PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 	private BrowserType browserType = BrowserType.chromium;
 
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
