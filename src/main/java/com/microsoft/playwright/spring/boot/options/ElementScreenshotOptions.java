@@ -48,9 +48,9 @@ public class ElementScreenshotOptions {
     public String maskColor;
     /**
      * Hides default white background and allows capturing screenshots with transparency. Not applicable to {@code jpeg}
-     * images. Defaults to {@code false}.
+     * images. Defaults to {@code true}.
      */
-    public Boolean omitBackground;
+    public Boolean omitBackground = Boolean.TRUE;
     /**
      * The file path to save the image to. The screenshot type will be inferred from file extension. If {@code path} is a
      * relative path, then it is resolved relative to the current working directory. If no path is provided, the image won't be
@@ -74,7 +74,7 @@ public class ElementScreenshotOptions {
      * value can be changed by using the {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()} or {@link
      * Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
      */
-    public Double timeout = 30000.0;
+    public Double timeout = 30 * 1000.0;
     /**
      * Specify screenshot type, defaults to {@code png}.
      */

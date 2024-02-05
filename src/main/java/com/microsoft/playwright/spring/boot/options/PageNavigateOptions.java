@@ -23,7 +23,7 @@ public class PageNavigateOptions {
      * {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()}, {@link Page#setDefaultNavigationTimeout
      * Page.setDefaultNavigationTimeout()} or {@link Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
      */
-    public Double timeout = 30000.0;
+    public Double timeout = 30 * 1000.0;
     /**
      * When to consider operation succeeded, defaults to {@code load}. Events can be either:
      * <ul>

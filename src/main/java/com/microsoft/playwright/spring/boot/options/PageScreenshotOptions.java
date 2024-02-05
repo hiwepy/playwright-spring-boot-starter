@@ -38,9 +38,9 @@ public class PageScreenshotOptions {
     public Clip clip;
     /**
      * When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Defaults to {@code
-     * false}.
+     * true}.
      */
-    public Boolean fullPage;
+    public Boolean fullPage = Boolean.TRUE;
     /**
      * Specify locators that should be masked when the screenshot is taken. Masked elements will be overlaid with a pink box
      * {@code #FF00FF} (customized by {@code maskColor}) that completely covers its bounding box.
@@ -54,9 +54,9 @@ public class PageScreenshotOptions {
     public String maskColor;
     /**
      * Hides default white background and allows capturing screenshots with transparency. Not applicable to {@code jpeg}
-     * images. Defaults to {@code false}.
+     * images. Defaults to {@code true}.
      */
-    public Boolean omitBackground;
+    public Boolean omitBackground = Boolean.TRUE;
     /**
      * The file path to save the image to. The screenshot type will be inferred from file extension. If {@code path} is a
      * relative path, then it is resolved relative to the current working directory. If no path is provided, the image won't be
@@ -66,7 +66,7 @@ public class PageScreenshotOptions {
     /**
      * The quality of the image, between 0-100. Not applicable to {@code png} images.
      */
-    public Integer quality;
+    public Integer quality = 100;
     /**
      * When set to {@code "css"}, screenshot will have a single pixel per each css pixel on the page. For high-dpi devices,
      * this will keep screenshots small. Using {@code "device"} option will produce a single pixel per each device pixel, so
@@ -74,17 +74,17 @@ public class PageScreenshotOptions {
      *
      * <p> Defaults to {@code "device"}.
      */
-    public ScreenshotScale scale;
+    public ScreenshotScale scale = ScreenshotScale.DEVICE;
     /**
      * Maximum time in milliseconds. Defaults to {@code 30000} (30 seconds). Pass {@code 0} to disable timeout. The default
      * value can be changed by using the {@link BrowserContext#setDefaultTimeout BrowserContext.setDefaultTimeout()} or {@link
      * Page#setDefaultTimeout Page.setDefaultTimeout()} methods.
      */
-    public Double timeout;
+    public Double timeout = 30 * 1000.0;
     /**
      * Specify screenshot type, defaults to {@code png}.
      */
-    public ScreenshotType type;
+    public ScreenshotType type = ScreenshotType.PNG;
 
     public Page.ScreenshotOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
