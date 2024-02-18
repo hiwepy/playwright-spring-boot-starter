@@ -83,16 +83,16 @@ public class ElementScreenshotOptions {
     public ElementHandle.ScreenshotOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         ElementHandle.ScreenshotOptions options = new ElementHandle.ScreenshotOptions();
-        map.from(animations).whenNonNull().to(options::setAnimations);
-        map.from(caret).whenNonNull().to(options::setCaret);
-        map.from(mask).whenNonNull().to(options::setMask);
-        map.from(maskColor).whenHasText().to(options::setMaskColor);
-        map.from(omitBackground).whenNonNull().to(options::setOmitBackground);
-        map.from(path).whenNonNull().to(options::setPath);
-        map.from(quality).whenNot((v) -> type != ScreenshotType.PNG && v != null).to(options::setQuality);
-        map.from(scale).whenNonNull().to(options::setScale);
-        map.from(timeout).whenNonNull().to(options::setTimeout);
-        map.from(type).whenNonNull().to(options::setType);
+        map.from(this.getAnimations()).whenNonNull().to(options::setAnimations);
+        map.from(this.getCaret()).whenNonNull().to(options::setCaret);
+        map.from(this.getMask()).whenNonNull().to(options::setMask);
+        map.from(this.getMaskColor()).whenHasText().to(options::setMaskColor);
+        map.from(this.getOmitBackground()).whenNonNull().to(options::setOmitBackground);
+        map.from(this.getPath()).whenNonNull().to(options::setPath);
+        map.from(this.getQuality()).whenNot((v) -> type != ScreenshotType.PNG && v != null).to(options::setQuality);
+        map.from(this.getScale()).whenNonNull().to(options::setScale);
+        map.from(this.getTimeout()).whenNonNull().to(options::setTimeout);
+        map.from(this.getType()).whenNonNull().to(options::setType);
         return options;
     };
 

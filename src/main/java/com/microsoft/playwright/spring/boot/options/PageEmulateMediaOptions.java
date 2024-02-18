@@ -7,6 +7,7 @@ import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ReducedMotion;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.springframework.boot.context.properties.PropertyMapper;
 
 @Accessors(chain = true)
 @Data
@@ -34,11 +35,12 @@ public class PageEmulateMediaOptions {
     public ReducedMotion reducedMotion;
 
     public Page.EmulateMediaOptions toOptions() {
+        PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Page.EmulateMediaOptions options = new Page.EmulateMediaOptions();
-        options.setColorScheme(this.getColorScheme());
-        options.setForcedColors(this.getForcedColors());
-        options.setMedia(this.getMedia());
-        options.setReducedMotion(this.getReducedMotion());
+        map.from(this.getColorScheme()).whenNonNull().to(options::setColorScheme);
+        map.from(this.getForcedColors()).whenNonNull().to(options::setForcedColors);
+        map.from(this.getMedia()).whenNonNull().to(options::setMedia);
+        map.from(this.getReducedMotion()).whenNonNull().to(options::setReducedMotion);
         return options;
     }
 

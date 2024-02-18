@@ -97,7 +97,7 @@ public class PageScreenshotOptions {
         map.from(maskColor).whenHasText().to(options::setMaskColor);
         map.from(omitBackground).whenNonNull().to(options::setOmitBackground);
         map.from(path).whenNonNull().to(options::setPath);
-        map.from(quality).whenNonNull().to(options::setQuality);
+        map.from(quality).whenNot((v) -> type != ScreenshotType.PNG && v != null).to(options::setQuality);
         map.from(scale).whenNonNull().to(options::setScale);
         map.from(timeout).whenNonNull().to(options::setTimeout);
         map.from(type).whenNonNull().to(options::setType);
