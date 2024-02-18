@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 @Accessors(chain = true)
 @Data
@@ -89,18 +90,18 @@ public class PageScreenshotOptions {
     public Page.ScreenshotOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Page.ScreenshotOptions options = new Page.ScreenshotOptions();
-        map.from(animations).whenNonNull().to(options::setAnimations);
-        map.from(caret).whenNonNull().to(options::setCaret);
-        map.from(clip).whenNonNull().to(options::setClip);
-        map.from(fullPage).whenNonNull().to(options::setFullPage);
-        map.from(mask).whenNonNull().to(options::setMask);
-        map.from(maskColor).whenHasText().to(options::setMaskColor);
-        map.from(omitBackground).whenNonNull().to(options::setOmitBackground);
-        map.from(path).whenNonNull().to(options::setPath);
-        map.from(quality).whenNot((v) -> type != ScreenshotType.PNG && v != null).to(options::setQuality);
-        map.from(scale).whenNonNull().to(options::setScale);
-        map.from(timeout).whenNonNull().to(options::setTimeout);
-        map.from(type).whenNonNull().to(options::setType);
+        map.from(this.getAnimations()).whenNonNull().to(options::setAnimations);
+        map.from(this.getCaret()).whenNonNull().to(options::setCaret);
+        map.from(this.getClip()).whenNonNull().to(options::setClip);
+        map.from(this.getFullPage()).whenNonNull().to(options::setFullPage);
+        map.from(this.getMask()).whenNonNull().to(options::setMask);
+        map.from(this.getMaskColor()).whenHasText().to(options::setMaskColor);
+        map.from(this.getOmitBackground()).whenNonNull().to(options::setOmitBackground);
+        map.from(this.getPath()).whenNonNull().to(options::setPath);
+        map.from(this.getQuality()).when((quality) -> Objects.nonNull(this.getType()) && this.getType() != ScreenshotType.PNG && Objects.nonNull(quality) ).to(options::setQuality);
+        map.from(this.getScale()).whenNonNull().to(options::setScale);
+        map.from(this.getTimeout()).whenNonNull().to(options::setTimeout);
+        map.from(this.getType()).whenNonNull().to(options::setType);
         return options;
     };
 

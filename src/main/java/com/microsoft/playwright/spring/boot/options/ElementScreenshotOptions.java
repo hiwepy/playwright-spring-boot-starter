@@ -14,6 +14,7 @@ import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 @Accessors(chain = true)
 @Data
@@ -89,7 +90,7 @@ public class ElementScreenshotOptions {
         map.from(this.getMaskColor()).whenHasText().to(options::setMaskColor);
         map.from(this.getOmitBackground()).whenNonNull().to(options::setOmitBackground);
         map.from(this.getPath()).whenNonNull().to(options::setPath);
-        map.from(this.getQuality()).whenNot((v) -> type != ScreenshotType.PNG && v != null).to(options::setQuality);
+        map.from(this.getQuality()).when((quality) -> Objects.nonNull(this.getType()) && this.getType() != ScreenshotType.PNG && Objects.nonNull(quality)).to(options::setQuality);
         map.from(this.getScale()).whenNonNull().to(options::setScale);
         map.from(this.getTimeout()).whenNonNull().to(options::setTimeout);
         map.from(this.getType()).whenNonNull().to(options::setType);
