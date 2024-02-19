@@ -40,6 +40,11 @@ public class PlaywrightInstall implements Runnable {
 				browserContextPool.borrowObject();
 				// 2、安装完成后
 				isInstalled = true;
+ 				if (isInstalled) {
+					log.info("Playwright is installed.");
+				} else {
+					log.warn("Playwright is not installed yet.");
+				}
 			} catch (Exception e) {
 				log.error("Playwright install error", e);
 			}

@@ -66,11 +66,6 @@ public class PlaywrightAutoConfiguration {
         PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
         // 5、调用 run 方法开始安装
         installer.run();
-        if (installer.isInstalled()) {
-            log.info("Playwright is installed.");
-        } else {
-            log.warn("Playwright is not installed yet.");
-        }
 
         return browserContextPool;
     }
