@@ -44,7 +44,7 @@ public class PlaywrightAutoConfiguration {
                     userDataRootDir = System.getProperty("java.io.tmpdir");
                 }
                 factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataRootDir);
-                Runtime.getRuntime().addShutdownHook(new PlaywrightHook(factory, 0));
+
             };break;
             default: {
 
@@ -53,6 +53,8 @@ public class PlaywrightAutoConfiguration {
 
             };break;
         }
+
+        Runtime.getRuntime().addShutdownHook(new PlaywrightHook(factory, 0));
 
         // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
         GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
