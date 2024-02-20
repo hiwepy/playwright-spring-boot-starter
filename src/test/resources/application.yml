@@ -2,13 +2,21 @@
 ###Playwright（PlaywrightProperties）配置：
 ################################################################################################################
 playwright:
+  browser-type: chromium
+  browser-mode: incognito
   browser-pool:
-    max-idle: 5
-    min-idle: 40
-    max-total: 40
+    max-idle: 8
+    min-idle: 8
+    max-total: 12
     test-on-borrow: true
     test-while-idle: true
     test-on-return: true
+  launch-persistent-options:
+    headless: true
+    args:
+      - '--start-maximized'
+      - '--ignore-certificate-errors'
+    user-data-root-dir: "D:/tmp"
   launch-options:
     headless: true
     args:
@@ -16,3 +24,6 @@ playwright:
       - '--ignore-certificate-errors'
   new-context-options:
     ignore-https-errors: true
+    screen-size:
+      width: 1920
+      height: 1080
