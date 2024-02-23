@@ -362,7 +362,7 @@
 		<commons-pool2.version>2.11.1</commons-pool2.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
 		<commons-io.version>2.13.0</commons-io.version>
-		<playwright.version>1.40.0</playwright.version>
+		<playwright.version>1.41.2</playwright.version>
 		<spring-biz.version>1.1.5.RELEASE</spring-biz.version>
 		<transmittable-thread-local.version>2.14.2</transmittable-thread-local.version>
 		<maven.version>3.0</maven.version>
