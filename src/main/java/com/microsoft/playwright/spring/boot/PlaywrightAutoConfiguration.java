@@ -65,9 +65,9 @@ public class PlaywrightAutoConfiguration {
         BrowserContextPool browserContextPool = new BrowserContextPool(factory, poolConfig);
 
         // 4、创建 PlaywrightInstall 实例
-       //PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
+        PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
         // 5、调用 run 方法开始安装
-        //installer.run();
+        installer.run();
 
         return browserContextPool;
     }
