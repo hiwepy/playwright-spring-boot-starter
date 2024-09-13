@@ -35,8 +35,8 @@ public class PlaywrightUtil {
     /**
      * 获取cookie
      *
-     * @param page
-     * @return
+     * @param page page
+     * @return cookie
      */
     public static String getCookies(Page page) {
         return cookieToString(page.context().cookies());
@@ -45,8 +45,8 @@ public class PlaywrightUtil {
     /**
      * 获取cookie
      *
-     * @param cookies
-     * @return
+     * @param cookies cookies
+     * @return cookie
      */
     public static String cookieToString(List<Cookie> cookies) {
         return cookies.stream().map(cookie -> cookie.name + "=" + cookie.value).collect(Collectors.joining(TOKEN_SPLITTER));
@@ -55,7 +55,7 @@ public class PlaywrightUtil {
     /**
      * 清空localStorage
      *
-     * @param page
+     * @param page page
      */
     public static void clearLocalStorage(Page page) {
         page.evaluate("window.localStorage.clear();");
@@ -64,10 +64,10 @@ public class PlaywrightUtil {
     /**
      * 滑动滑块
      *
-     * @param page
-     * @param slideElementPath
-     * @param slideLength
-     * @param steps
+     * @param page page
+     * @param slideElementPath slideElementPath
+     * @param slideLength slideLength
+     * @param steps steps
      */
     public static void slide(Page page, String slideElementPath, int slideLength, int steps) {
         slide(page, page.waitForSelector(slideElementPath, new Page.WaitForSelectorOptions().setTimeout(TimeUnit.SECONDS.toMillis(5))), slideLength, steps);
@@ -76,10 +76,10 @@ public class PlaywrightUtil {
     /**
      * 滑动滑块
      *
-     * @param page
-     * @param elementHandle
-     * @param slideLength
-     * @param steps
+     * @param page page
+     * @param elementHandle elementHandle
+     * @param slideLength slideLength
+     * @param steps steps
      */
     public static void slide(Page page, ElementHandle elementHandle, int slideLength, int steps) {
         Mouse mouse = page.mouse();
