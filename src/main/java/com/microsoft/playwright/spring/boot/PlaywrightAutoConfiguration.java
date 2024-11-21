@@ -64,10 +64,13 @@ public class PlaywrightAutoConfiguration {
         // 3、创建 BrowserContextPool 对象
         BrowserContextPool browserContextPool = new BrowserContextPool(factory, poolConfig);
 
-        // 4、创建 PlaywrightInstall 实例
-       //PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
-        // 5、调用 run 方法开始安装
-        //installer.run();
+        // 4、判断是否需要预安装浏览器
+        if(playwrightProperties.isPreinstall()){
+            // 4.1、创建 PlaywrightInstall 实例
+            PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
+            // 4.2、调用 run 方法开始安装
+            installer.run();
+        }
 
         return browserContextPool;
     }
