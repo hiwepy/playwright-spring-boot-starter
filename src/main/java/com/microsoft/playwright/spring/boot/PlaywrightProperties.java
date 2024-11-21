@@ -31,9 +31,8 @@ public class PlaywrightProperties {
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
 	private BrowserType browserType = BrowserType.chromium;
-
+	private boolean preinstall = true;
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
-
 	/**
 	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
