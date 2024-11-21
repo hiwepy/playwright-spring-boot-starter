@@ -34,6 +34,8 @@ public class PlaywrightProperties {
 
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
+	private boolean preinstall = true;
+
 	/**
 	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
