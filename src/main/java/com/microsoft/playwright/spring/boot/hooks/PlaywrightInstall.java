@@ -24,8 +24,8 @@ import java.util.Objects;
 @Slf4j
 public class PlaywrightInstall implements Runnable {
 	private volatile boolean isInstalled = false;
-	private BrowserContextPool browserContextPool;
-	private PlaywrightProperties playwrightProperties;
+	private final BrowserContextPool browserContextPool;
+	private final PlaywrightProperties playwrightProperties;
 	public PlaywrightInstall(BrowserContextPool browserContextPool, PlaywrightProperties playwrightProperties) {
 		this.browserContextPool = browserContextPool;
 		this.playwrightProperties = playwrightProperties;

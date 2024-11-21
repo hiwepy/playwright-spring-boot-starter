@@ -80,7 +80,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * 从池中取出一个池中物（playwright）时调用
      * @param p a {@code PooledObject} wrapping the instance to be activated
      *
-     * @throws Exception
+     * @throws Exception if there is a problem activating {@code obj}
      */
     @Override
     public void activateObject(PooledObject<BrowserContext> p) throws Exception {
@@ -95,7 +95,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * 销毁一个池中物（playwright）时调用
      * @param p a {@code PooledObject} wrapping the instance to be destroyed
      *
-     * @throws Exception
+     * @throws Exception if there is a problem destroying {@code obj}
      */
     @Override
     public void destroyObject(PooledObject<BrowserContext> p) throws Exception {
@@ -144,8 +144,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     /**
      * 创建池中物（playwright）
-     * @return
-     * @throws Exception
+     * @return a new instance that can be served by the pool
+     * @throws Exception if there is a problem creating a new instance
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
@@ -175,7 +175,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * 归还一个池中物（playwright）时调用，不应该activateObject冲突
      * @param p a {@code PooledObject} wrapping the instance to be passivated
      *
-     * @throws Exception
+     * @throws Exception if there is a problem passivating {@code obj}
      */
     @Override
     public void passivateObject(PooledObject<BrowserContext> p) throws Exception {
@@ -196,7 +196,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      * true：检测正常，符合预期；false：异常，销毁对象
      * @param p a {@code PooledObject} wrapping the instance to be validated
      *
-     * @return
+     * @return {@code false} if this object is not currently valid and should be dropped from the pool, {@code true} otherwise.
      */
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {

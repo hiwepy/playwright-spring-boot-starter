@@ -259,7 +259,7 @@ public class BrowserLaunchPersistentOptions {
      * Specific user agent to use in this context.
      */
     public String userAgent;
-    /**
+    /*
      * Path to a User Data Directory, which stores browser session data like cookies and local storage. More details for <a
      *    * href="https://chromium.googlethis.com/chromium/src/+/master/docs/user_data_dir.md#introduction">Chromium</a> and <a
      *    * href="https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options#User_Profile">Firefox</a>. Note that
