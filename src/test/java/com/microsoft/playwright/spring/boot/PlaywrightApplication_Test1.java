@@ -16,6 +16,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
             // 截图测试
             captureScreenshot(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build(), null).whenComplete((pdf, throwable) -> {
                 try(ByteArrayInputStream input = new ByteArrayInputStream(pdf.getBuffer());) {
-                    IOUtils.copy(input, new FileOutputStream(new File(BASE_DIR, "test.png")));
+                    IOUtils.copy(input, Files.newOutputStream(new File(BASE_DIR, "test.png").toPath()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -53,7 +54,7 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
             // 生成pdf测试
             pageToPdf(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build()).whenComplete((pdf, throwable) -> {
                 try(ByteArrayInputStream input = new ByteArrayInputStream(pdf.getBuffer());) {
-                    IOUtils.copy(input, new FileOutputStream(new File(BASE_DIR, "test.pdf")));
+                    IOUtils.copy(input, Files.newOutputStream(new File(BASE_DIR, "test.pdf").toPath()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

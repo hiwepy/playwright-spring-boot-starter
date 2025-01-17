@@ -13,46 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.microsoft.playwright.spring.boot.hooks;
+package com.microsoft.playwright.spring.boot.initializer;
 
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPool;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
 
 @Slf4j
-public class PlaywrightInstall implements Runnable {
-	private volatile boolean isInstalled = false;
-	private final BrowserContextPool browserContextPool;
+public class BrowserInitializer implements Runnable {
+
+	private final BrowserPool browserPool;
 	private final PlaywrightProperties playwrightProperties;
-	public PlaywrightInstall(BrowserContextPool browserContextPool, PlaywrightProperties playwrightProperties) {
-		this.browserContextPool = browserContextPool;
+
+	public BrowserInitializer(BrowserPool browserPool, PlaywrightProperties playwrightProperties) {
+		this.browserPool = browserPool;
 		this.playwrightProperties = playwrightProperties;
 	}
 
 	@Override
 	public void run() {
-		if(Objects.nonNull(browserContextPool) && Objects.nonNull(playwrightProperties)){
+		if(Objects.nonNull(browserPool) && Objects.nonNull(playwrightProperties)){
 			try {
+				log.info("Browser Pool Start initialize ...");
 				// 1、触发浏览器安装
 				System.setProperty("PLAYWRIGHT_DOWNLOAD_HOST", playwrightProperties.getDownloadHost());
-				browserContextPool.borrowObject();
-				// 2、安装完成后
-				isInstalled = true;
- 				if (isInstalled) {
-					log.info("Playwright is installed.");
-				} else {
-					log.warn("Playwright is not installed yet.");
-				}
+				browserPool.preparePool();
+				log.info("Browser Pool is initialize completed.");
 			} catch (Exception e) {
-				log.error("Playwright install error", e);
+				log.error("Browser Pool initialize error", e);
 			}
 		}
-	}
-
-	public boolean isInstalled() {
-		return isInstalled;
 	}
 
 }

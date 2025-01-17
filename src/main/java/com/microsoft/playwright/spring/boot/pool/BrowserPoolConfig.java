@@ -1,6 +1,6 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Browser;
 import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.context.properties.PropertyMapper;
@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.PropertyMapper;
 import java.time.Duration;
 
 @Data
-public class BrowserContextPoolConfig {
+public class BrowserPoolConfig {
 
     private boolean blockWhenExhausted = GenericObjectPoolConfig.DEFAULT_BLOCK_WHEN_EXHAUSTED;
 
@@ -44,9 +44,9 @@ public class BrowserContextPoolConfig {
 
     private boolean testWhileIdle = GenericObjectPoolConfig.DEFAULT_TEST_WHILE_IDLE;
 
-    public GenericObjectPoolConfig<BrowserContext> toPoolConfig(){
+    public GenericObjectPoolConfig<Browser> toPoolConfig(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-        GenericObjectPoolConfig<BrowserContext> poolConfig = new GenericObjectPoolConfig<>();
+        GenericObjectPoolConfig<Browser> poolConfig = new GenericObjectPoolConfig<>();
         map.from(this.isBlockWhenExhausted()).to(poolConfig::setBlockWhenExhausted);
         map.from(this.getDurationBetweenEvictionRuns()).whenNonNull().to(poolConfig::setTimeBetweenEvictionRuns);
         map.from(this.getEvictionPolicyClassName()).whenHasText().to(poolConfig::setEvictionPolicyClassName);
@@ -56,10 +56,10 @@ public class BrowserContextPoolConfig {
         map.from(this.getMaxWaitDuration()).whenNonNull().to(poolConfig::setMaxWait);
         map.from(this.getMaxIdle()).to(poolConfig::setMaxIdle);
         map.from(this.getMaxTotal()).to(poolConfig::setMaxTotal);
-        map.from(this.getMinEvictableIdleDuration()).whenNonNull().to(poolConfig::setMinEvictableIdleDuration);
+        map.from(this.getMinEvictableIdleDuration()).whenNonNull().to(poolConfig::setMinEvictableIdleTime);
         map.from(this.getMinIdle()).to(poolConfig::setMinIdle);
         map.from(this.getNumTestsPerEvictionRun()).to(poolConfig::setNumTestsPerEvictionRun);
-        map.from(this.getSoftMinEvictableIdleDuration()).whenNonNull().to(poolConfig::setSoftMinEvictableIdleDuration);
+        map.from(this.getSoftMinEvictableIdleDuration()).whenNonNull().to(poolConfig::setSoftMinEvictableIdleTime);
         map.from(this.isTestOnBorrow()).to(poolConfig::setTestOnBorrow);
         map.from(this.isTestOnCreate()).to(poolConfig::setTestOnCreate);
         map.from(this.isTestOnReturn()).to(poolConfig::setTestOnReturn);

@@ -1,12 +1,10 @@
 package com.microsoft.playwright.spring.boot.utils;
 
-import com.alibaba.ttl.TransmittableThreadLocal;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.MouseButton;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,18 +15,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class PlaywrightUtil {
-
-    protected static final PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-
-    private static ThreadLocal<String> ttl = new TransmittableThreadLocal<String>();
-
-    public static void setUerDataDir(String userDataDir) {
-        ttl.set(userDataDir);
-    }
-
-    public static String getUerDataDir() {
-        return ttl.get();
-    }
 
     private static final String TOKEN_SPLITTER = ";";
 
@@ -106,6 +92,7 @@ public class PlaywrightUtil {
         try {
             if (Objects.nonNull(page) && !page.isClosed()){
                 page.close();
+                log.debug("Close page Instance Success.");
             }
         } catch (Exception e) {
             log.error("Close Page Error.", e);

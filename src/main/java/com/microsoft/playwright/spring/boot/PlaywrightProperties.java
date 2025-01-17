@@ -17,6 +17,7 @@ package com.microsoft.playwright.spring.boot;
 
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
+import com.microsoft.playwright.spring.boot.pool.BrowserPoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -30,18 +31,24 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
-	private BrowserType browserType = BrowserType.chromium;
-
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
 	/**
+	 * Browser type. Defaults to {@link BrowserType#chromium chromium}.
+	 */
+	private BrowserType browserType = BrowserType.chromium;
+	/**
 	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
-	public BrowserMode browserMode = BrowserMode.incognito;
+	private BrowserMode browserMode = BrowserMode.incognito;
 	/**
 	 * Browser Pool Config
 	 */
-	private BrowserContextPoolConfig browserPool = new BrowserContextPoolConfig();
+	private BrowserPoolConfig browserPool = new BrowserPoolConfig();
+	/**
+	 * Browser Context Pool Config
+	 */
+	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
@@ -67,7 +74,7 @@ public class PlaywrightProperties {
 	 */
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
 	/**
-	 * Page Set Content Options
+	 * Page Element Screenshot Options
 	 */
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
 
