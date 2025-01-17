@@ -1,11 +1,13 @@
 package com.microsoft.playwright.spring.boot;
 
+import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
-import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
+import com.microsoft.playwright.spring.boot.pool.BrowserPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,17 +23,17 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@SpringBootApplication
+//@SpringBootApplication
 @Slf4j
-public class PlaywrightApplication_Test2 implements CommandLineRunner {
+public class PlaywrightPdfApplication_Test2 implements CommandLineRunner {
 
     protected static final String BASE_DIR = "D://tmp";
 
     @Autowired
-    private BrowserContextPool browserContextPool;
+    private BrowserPool browserPool;
 
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(PlaywrightApplication_Test2.class, args);
+        SpringApplication.run(PlaywrightPdfApplication_Test2.class, args);
     }
 
     @Override
@@ -86,10 +88,11 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             log.info("Capturing screenshot : rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-            Page page = null;
+            Browser browser = null;
             try {
+                browser = browserPool.borrowObject();
                 // 从池中获取一个浏览器页面
-                page = browserContextPool.borrowObject().newPage();
+                Page page = browser.newPage();
                 //page = browserPagePool.borrowObject();
                 // 设置页面加载参数, 并跳转到url
                 page.navigate(urlTemp.getUrl(), new Page.NavigateOptions()
@@ -124,18 +127,12 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
                 log.info("screenshot success for {} : {}", rendeId, screenshotFile.getAbsolutePath());
                 urlTemp.setPath(screenshotFile.getAbsolutePath());
                 urlTemp.setName(fileName);
-                browserContextPool.returnObject(page.context());
-                //browserPagePool.returnObject(page);
                 return urlTemp;
             } catch (Exception e) {
                 throw new RuntimeException("Capture screenshot error: {}", e);
             } finally {
-                try {
-                    if (Objects.nonNull(page) && !page.isClosed()){
-                        page.close();
-                    }
-                } catch (Exception e) {
-                    // ignore error
+                if (Objects.nonNull(browser)){
+                    browserPool.returnObject(browser);
                 }
             }
         });
@@ -165,10 +162,11 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             log.info("Generate PDF for url: {}", urlTemp.getUrl());
-            Page page = null;
+            Browser browser = null;
             try {
+                browser = browserPool.borrowObject();
                 // 从池中获取一个浏览器页面
-                page = browserContextPool.borrowObject().newPage();
+                Page page = browser.newPage();
                 // 设置页面加载参数, 并跳转到url
                 page.navigate(urlTemp.getUrl(), new Page.NavigateOptions()
                         .setTimeout(60 * 1000)
@@ -189,17 +187,12 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
                 log.info("Generate pdf file success for : {}", pdfFile.getAbsolutePath());
                 urlTemp.setPath(pdfFile.getAbsolutePath());
                 urlTemp.setName(fileName);
-                browserContextPool.returnObject(page.context());
                 return urlTemp;
             } catch (Exception e) {
                 throw new RuntimeException("Generate PDF error: {}", e);
             } finally {
-                try {
-                    if (Objects.nonNull(page) && !page.isClosed()){
-                        page.close();
-                    }
-                } catch (Exception e) {
-                    // ignore error
+                if (Objects.nonNull(browser)){
+                    browserPool.returnObject(browser);
                 }
             }
         });
