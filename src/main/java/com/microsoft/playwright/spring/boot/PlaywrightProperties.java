@@ -77,6 +77,10 @@ public class PlaywrightProperties {
 	 * Page Element Screenshot Options
 	 */
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
+	/**
+	 * Page Pdf Options
+	 */
+	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
 	public enum BrowserType {
 		chromium,
