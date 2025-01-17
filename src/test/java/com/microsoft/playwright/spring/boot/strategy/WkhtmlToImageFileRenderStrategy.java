@@ -1,6 +1,7 @@
 package com.microsoft.playwright.spring.boot.strategy;
 
 
+import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
@@ -21,7 +22,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -48,7 +52,26 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
     @Override
     protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
-        // 1、使用CompletableFuture异步处理
+        // 从池中获取一个浏览器页面
+        Browser browser = null;
+        try {
+            browser = browserPool.borrowObject();
+            // 1、使用CompletableFuture异步处理
+            List<BufferTemp> bufferTemps = new ArrayList<>();
+            for (BufferTemp urlTemp : renderBO.getUrls()) {
+                captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()).join();
+                bufferTemps.add(urlTemp);
+            }
+            return bufferTemps;
+        } catch (Exception e) {
+            throw new TaskRuntimeException("Failed to create browser instance: " + e.getMessage());
+        } finally {
+            if(Objects.nonNull(browser)){
+                browserPool.returnObject(browser);
+            }
+        }
+
+        /*
         List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
                 .map(urlTemp -> captureScreenshotFuture(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
                 .collect(Collectors.toList());
@@ -56,7 +79,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
         CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
         CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                 .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> StringUtils.isNotBlank(urlTemp.getPath())).collect(Collectors.toList()));
-        return resultFuture.join();
+        return resultFuture.join();*/
     }
 
 

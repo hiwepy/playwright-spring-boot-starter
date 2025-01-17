@@ -16,14 +16,6 @@ public class WkhtmlRenderBO implements Serializable {
      */
     private String randerId;
     /**
-     * 学校代码
-     */
-    private String schoolCode;
-    /**
-     * 用户编码
-     */
-    private String userCode;
-    /**
      * 选择器
      */
     private String selector;

@@ -1,6 +1,7 @@
 package com.microsoft.playwright.spring.boot.strategy;
 
 
+import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
@@ -16,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -48,6 +50,27 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
      */
     protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
+
+        // 从池中获取一个浏览器页面
+        Browser browser = null;
+        try {
+            browser = browserPool.borrowObject();
+            // 1、使用CompletableFuture异步处理
+            List<CompletableFuture<BufferTemp>> futureList = new ArrayList<>();
+            for (BufferTemp urlTemp : renderBO.getUrls()) {
+                futureList.add(captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
+            }
+            // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
+            CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).get();
+            return renderBO.getUrls().stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new TaskRuntimeException("Failed to create browser instance: " + e.getMessage());
+        } finally {
+            if(Objects.nonNull(browser)){
+                browserPool.returnObject(browser);
+            }
+        }
+        /*
         // 1、使用CompletableFuture异步处理
         List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
                 .map(urlTemp -> captureScreenshotFuture(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
@@ -56,7 +79,7 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
         CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
         CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                 .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
-        return resultFuture.join();
+        return resultFuture.join();*/
     }
 
     @Override

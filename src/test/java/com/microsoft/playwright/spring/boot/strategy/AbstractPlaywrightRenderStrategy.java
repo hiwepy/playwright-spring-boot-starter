@@ -178,24 +178,23 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @param selector 选择器
      * @return
      */
-    protected CompletableFuture<BufferTemp> captureScreenshotFuture(String rendeId, BufferTemp urlTemp, String selector){
+    protected CompletableFuture<BufferTemp> captureScreenshotFuture(Browser browser, String rendeId, BufferTemp urlTemp, String selector){
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
         //HttpServletRequest request = WebUtils.getHttpServletRequest();
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
-            // 从池中获取一个浏览器页面
-            Browser browser = null;
-            BrowserContext browserContext = null;
+
+            //BrowserContext browserContext = null;
             try {
-                if( playwrightRenderProperties.isIsolated()){
+               /* if( playwrightRenderProperties.isIsolated()){
                     browserContext = browserContextPool.borrowObject();
                     //BrowserUtil.copyCookies(request, browserContext);
                 } else {
-                    browser = browserPool.borrowObject();
-                }
-                try( Page page = Objects.nonNull(browser) ? browser.newPage() : browserContext.newPage()) {
+
+                }*/
+                try( Page page = browser.newPage()) {
                     // 跳转到url
                     log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
                     BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
@@ -216,13 +215,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             } catch (Exception e) {
                 log.error("Browser Context error: ", e);
                 throw new PlaywrightException("Browser Context error", e);
-            } finally {
-                if(Objects.nonNull(browser)){
-                    browserPool.returnObject(browser);
-                }
-                if(Objects.nonNull(browserContext)){
-                    browserContextPool.returnObject(browserContext);
-                }
             }
         }, dtpToImageExecutor);
     }
@@ -312,7 +304,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         Page.NavigateOptions navigateOptions = playwrightProperties.getPageNavigateOptions().toOptions();
         page.navigate(urlTemp.getUrl(), navigateOptions);
         // 如果设置了加载等待时间，则等待一段时间
-        if(Objects.nonNull(playwrightRenderProperties.getLoadWait()) && playwrightRenderProperties.getLoadWait().toMillis() > 0){
+        /*if(Objects.nonNull(playwrightRenderProperties.getLoadWait()) && playwrightRenderProperties.getLoadWait().toMillis() > 0){
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     log.debug("The page load wait {} milliseconds for : {}", playwrightRenderProperties.getLoadWait().toMillis(), page.url());
@@ -325,7 +317,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             // 等待异步任务完成
             future.join();
             log.debug("The page load wait completed for : {}", page.url());
-        }
+        }*/
         log.debug("The page load completed for : {}", page.url());
         // 执行回调函数（截图、单页生成pdf）
         BufferTemp applyTemp = callback.apply(page, urlTemp);
@@ -352,7 +344,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             // 设置重新加载状态为false
             urlTemp.setReload(false);
             // 如果是重试，则等待一段时间
-            if(Objects.nonNull(playwrightRenderProperties.getReloadWait()) && playwrightRenderProperties.getReloadWait().toMillis() > 0){
+            /*if(Objects.nonNull(playwrightRenderProperties.getReloadWait()) && playwrightRenderProperties.getReloadWait().toMillis() > 0){
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     try {
                         log.debug("The page reload wait {} milliseconds for : {}", playwrightRenderProperties.getLoadWait().toMillis(), page.url());
@@ -365,7 +357,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 // 等待异步任务完成
                 future.join();
                 log.debug("The page reload wait completed for : {}", page.url());
-            }
+            }*/
             log.debug("The page reload completed for : {} , reloadTimes: {}, reloadTimeout: {}", page.url(), loadRetry.get(), urlTemp.getReloadTimeout());
             // 判断重新加载，再次处理后的结果是否可用，如果可用则返回，无需在进行重试
             if(this.isPresentable(applyTemp)){

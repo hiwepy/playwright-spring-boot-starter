@@ -6,9 +6,9 @@ server:
 ################################################################################################################
 playwright:
   browser-pool:
-    max-idle: 4
-    min-idle: 2
-    max-total: 4
+    max-idle: 1
+    min-idle: 1
+    max-total: 1
     test-on-borrow: true
     test-while-idle: true
     test-on-return: true
@@ -28,11 +28,11 @@ playwright:
     ignore-https-errors: true
     screen-size:
       width: 1920
-      height: 1080
+      height: 1780
   render:
-    load-wait: 5s
+    load-wait: 1s
     reloadable: true
-    reload-wait: 3s
+    reload-wait: 1s
     reload-limit: 3
     retryable: true
     lower-limit: 100

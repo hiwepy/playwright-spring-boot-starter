@@ -72,13 +72,14 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
 
         List<String> reportUrls = Arrays.asList("https://www.baidu.com", "https://www.baidu.com");
 
+
         Map<String, Object> params = new HashMap<>();
         params.put("report_urls", reportUrls);
         // 2.1、配置 PDF 渲染参数
         WkhtmlRenderBO renderBO = new WkhtmlRenderBO();
         //renderBO.setSchoolCode(schoolCode);
         //renderBO.setUserId(userId);
-        //renderBO.setSelector(".growthMain");
+        renderBO.setSelector(".growthMain");
         renderBO.setQuality(100);
         renderBO.setCompress(false);
         renderBO.setPageSize("A4");
