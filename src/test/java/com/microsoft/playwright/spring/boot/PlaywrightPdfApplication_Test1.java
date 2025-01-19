@@ -69,8 +69,8 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
         List<String> reportUrls = Arrays.asList("https://www.baidu.com", "https://www.baidu.com");
+
 
         Map<String, Object> params = new HashMap<>();
         params.put("report_urls", reportUrls);
