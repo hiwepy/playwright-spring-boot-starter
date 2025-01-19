@@ -1,11 +1,18 @@
 package com.microsoft.playwright.spring.boot.initializer;
 
+import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.PlaywrightProperties;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 
 public class PlaywrighInitializer implements Runnable {
 
+    private final PlaywrightProperties playwrightProperties;
 
+    public PlaywrighInitializer(PlaywrightProperties playwrightProperties) {
+        this.playwrightProperties = playwrightProperties;
+    }
 
 
     @Override
@@ -13,7 +20,8 @@ public class PlaywrighInitializer implements Runnable {
         // Create Playwright Instance .
         Playwright playwright = PlaywrightUtil.getInstance();
         // Lanuch Browser
-        PlaywrightUtil.launchBrowser(Playwright);
+        BrowserType.LaunchOptions options = playwrightProperties.getLaunchOptions().toOptions();
+        PlaywrightUtil.launchBrowser(playwright, playwrightProperties.getBrowserType(), options);
     }
 
 }
