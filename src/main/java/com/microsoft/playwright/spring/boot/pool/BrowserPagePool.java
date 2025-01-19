@@ -1,6 +1,6 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.AbandonedConfig;
@@ -8,17 +8,17 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 @Slf4j
-public class BrowserPool extends GenericObjectPool<Browser> {
+public class BrowserPagePool extends GenericObjectPool<Page> {
 
-    public BrowserPool(PooledObjectFactory<Browser> factory) {
+    public BrowserPagePool(PooledObjectFactory<Page> factory) {
         super(factory);
     }
 
-    public BrowserPool(PooledObjectFactory<Browser> factory, GenericObjectPoolConfig<Browser> config) {
+    public BrowserPagePool(PooledObjectFactory<Page> factory, GenericObjectPoolConfig<Page> config) {
         super(factory, config);
     }
 
-    public BrowserPool(PooledObjectFactory<Browser> factory, GenericObjectPoolConfig<Browser> config, AbandonedConfig abandonedConfig) {
+    public BrowserPagePool(PooledObjectFactory<Page> factory, GenericObjectPoolConfig<Page> config, AbandonedConfig abandonedConfig) {
         super(factory, config, abandonedConfig);
     }
 

@@ -1,7 +1,6 @@
 package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightManager;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -144,7 +143,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
         // Get playwright instance
-        Playwright playwright = PlaywrightManager.getInstance();
+        Playwright playwright = PlaywrightUtil.getInstance();
         // Create browser context
         BrowserContext browserContext = null;
         if (Objects.nonNull(launchPersistentOptions)) {
@@ -205,7 +204,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     @Override
     public void close() throws Exception {
-        PlaywrightManager.close( playwright -> null);
+        PlaywrightUtil.close( playwright -> null);
         log.info("Destroy BrowserContext of Playwright Instance Success.");
     }
 

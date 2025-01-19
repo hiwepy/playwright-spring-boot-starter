@@ -17,7 +17,7 @@ package com.microsoft.playwright.spring.boot;
 
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
-import com.microsoft.playwright.spring.boot.pool.BrowserPoolConfig;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -42,9 +42,9 @@ public class PlaywrightProperties {
 	 */
 	private BrowserMode browserMode = BrowserMode.incognito;
 	/**
-	 * Browser Pool Config
+	 * Browser Page Pool Config
 	 */
-	private BrowserPoolConfig browserPool = new BrowserPoolConfig();
+	private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
@@ -65,6 +65,10 @@ public class PlaywrightProperties {
 	 * New Context Options
 	 */
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
+	/**
+	 * New Page Options
+	 */
+	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */

@@ -16,33 +16,33 @@
 package com.microsoft.playwright.spring.boot.initializer;
 
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.pool.BrowserPool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
 
 @Slf4j
-public class BrowserInitializer implements Runnable {
+public class BrowserPageInitializer implements Runnable {
 
-	private final BrowserPool browserPool;
+	private final BrowserPagePool browserPagePool;
 	private final PlaywrightProperties playwrightProperties;
 
-	public BrowserInitializer(BrowserPool browserPool, PlaywrightProperties playwrightProperties) {
-		this.browserPool = browserPool;
+	public BrowserPageInitializer(BrowserPagePool browserPagePool, PlaywrightProperties playwrightProperties) {
+		this.browserPagePool = browserPagePool;
 		this.playwrightProperties = playwrightProperties;
 	}
 
 	@Override
 	public void run() {
-		if(Objects.nonNull(browserPool) && Objects.nonNull(playwrightProperties)){
+		if(Objects.nonNull(browserPagePool) && Objects.nonNull(playwrightProperties)){
 			try {
-				log.info("Browser Pool Start initialize ...");
+				log.info("Browser Page Pool Start initialize ...");
 				// 1、触发浏览器安装
 				System.setProperty("PLAYWRIGHT_DOWNLOAD_HOST", playwrightProperties.getDownloadHost());
-				browserPool.preparePool();
-				log.info("Browser Pool is initialize completed.");
+				browserPagePool.preparePool();
+				log.info("Browser Page Pool is initialize completed.");
 			} catch (Exception e) {
-				log.error("Browser Pool initialize error", e);
+				log.error("Browser Page Pool initialize error", e);
 			}
 		}
 	}

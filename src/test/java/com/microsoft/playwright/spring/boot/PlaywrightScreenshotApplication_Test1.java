@@ -7,7 +7,7 @@ import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
-import com.microsoft.playwright.spring.boot.pool.BrowserPool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -16,7 +16,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -37,7 +36,7 @@ public class PlaywrightScreenshotApplication_Test1 implements CommandLineRunner 
 
     protected static final String BASE_DIR = "D://tmp";
     @Autowired
-    private BrowserPool browserPool;
+    private BrowserPagePool browserPagePool;
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(PlaywrightScreenshotApplication_Test1.class, args);
@@ -113,7 +112,7 @@ public class PlaywrightScreenshotApplication_Test1 implements CommandLineRunner 
             log.info("Capturing screenshot : rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
             Browser browser = null;
             try {
-                browser = browserPool.borrowObject();
+                browser = browserPagePool.borrowObject();
                 // 从池中获取一个浏览器页面
                 Page page = browser.newPage();
                 // 设置页面加载参数, 并跳转到url
@@ -153,7 +152,7 @@ public class PlaywrightScreenshotApplication_Test1 implements CommandLineRunner 
                 throw new RuntimeException("Capture screenshot error: {}", e);
             } finally {
                 if (Objects.nonNull(browser)){
-                    browserPool.returnObject(browser);
+                    browserPagePool.returnObject(browser);
                 }
             }
         });

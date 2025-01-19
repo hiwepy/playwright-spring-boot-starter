@@ -1,15 +1,12 @@
 package com.microsoft.playwright.spring.boot;
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.initializer.BrowserContextInitializer;
-import com.microsoft.playwright.spring.boot.initializer.BrowserInitializer;
+import com.microsoft.playwright.spring.boot.initializer.BrowserPageInitializer;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
-import com.microsoft.playwright.spring.boot.pool.BrowserPool;
-import com.microsoft.playwright.spring.boot.pool.BrowserPooledObjectFactory;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -31,30 +28,30 @@ public class PlaywrightAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public BrowserPooledObjectFactory browserPooledObjectFactory(PlaywrightProperties playwrightProperties){
+    public BrowserPagePooledObjectFactory browserPooledObjectFactory(PlaywrightProperties playwrightProperties){
         BrowserType.LaunchOptions launchOptions = playwrightProperties.getLaunchOptions().toOptions();
-        return new BrowserPooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions);
+        return new BrowserPagePooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public BrowserPool browserPool(PlaywrightProperties playwrightProperties, BrowserPooledObjectFactory browserPooledObjectFactory){
+    public BrowserPagePool browserPool(PlaywrightProperties playwrightProperties, BrowserPagePooledObjectFactory browserPagePooledObjectFactory){
 
         // 1、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<Browser> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
+        GenericObjectPoolConfig<Page> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
         poolConfig.setJmxEnabled(Boolean.FALSE);
-        poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserPool.class));
+        poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserPagePool.class));
 
         // 2、创建 BrowserPool 对象
-        BrowserPool browserPool = new BrowserPool(browserPooledObjectFactory, poolConfig);
+        BrowserPagePool browserPagePool = new BrowserPagePool(browserPagePooledObjectFactory, poolConfig);
 
         // 3、创建 PlaywrightBrowserInitializer 实例
-        BrowserInitializer installer = new BrowserInitializer(browserPool, playwrightProperties);
+        BrowserPageInitializer installer = new BrowserPageInitializer(browserPagePool, playwrightProperties);
 
         // 4、调用 run 方法开始安装
         installer.run();
 
-        return browserPool;
+        return browserPagePool;
     }
 
     @Bean

@@ -11,8 +11,7 @@ import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.ResourceType;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
-import com.microsoft.playwright.spring.boot.pool.BrowserPool;
-import com.microsoft.playwright.spring.boot.util.BrowserUtil;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
 import com.microsoft.playwright.spring.boot.util.TimeUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
@@ -23,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.biz.utils.WebUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.util.Base64Utils;
@@ -31,7 +29,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -44,6 +41,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 /**
  * 抽象的 Playwright 处理策略
  */
@@ -68,7 +69,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
     @Autowired
     protected PlaywrightRenderProperties playwrightRenderProperties;
     @Autowired
-    protected BrowserPool browserPool;
+    protected BrowserPagePool browserPagePool;
     @Autowired
     protected BrowserContextPool browserContextPool;
     @Resource
@@ -194,7 +195,8 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 } else {
 
                 }*/
-                try( Page page = browser.newPage()) {
+                Browser.NewPageOptions options = playwrightProperties.getNewPageOptions().toOptions();
+                try( Page page = browser.newPage(options)) {
                     // 跳转到url
                     log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
                     BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
@@ -318,6 +320,9 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             future.join();
             log.debug("The page load wait completed for : {}", page.url());
         }*/
+
+        //assertThat(page).hasTitle(Pattern.compile("Playwright"));
+
         log.debug("The page load completed for : {}", page.url());
         // 执行回调函数（截图、单页生成pdf）
         BufferTemp applyTemp = callback.apply(page, urlTemp);
@@ -440,7 +445,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                     browserContext = browserContextPool.borrowObject();
                     //BrowserUtil.copyCookies(request, browserContext);
                 } else {
-                    browser = browserPool.borrowObject();
+                    browser = browserPagePool.borrowObject();
                 }
                 try( Page page = Objects.nonNull(browser) ? browser.newPage() : browserContext.newPage()) {
                     log.info("Generate pdf start for rendeId: {}, url : {}", rendeId, urlTemp.getUrl());
@@ -467,7 +472,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 throw new PlaywrightException("Browser Context error", e);
             } finally {
                 if(Objects.nonNull(browser)){
-                    browserPool.returnObject(browser);
+                    browserPagePool.returnObject(browser);
                 }
                 if(Objects.nonNull(browserContext)){
                     browserContextPool.returnObject(browserContext);

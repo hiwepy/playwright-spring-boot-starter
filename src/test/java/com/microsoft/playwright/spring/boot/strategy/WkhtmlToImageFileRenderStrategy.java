@@ -14,7 +14,6 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -55,19 +53,21 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
         // 从池中获取一个浏览器页面
         Browser browser = null;
         try {
-            browser = browserPool.borrowObject();
+            browser = browserPagePool.borrowObject();
             // 1、使用CompletableFuture异步处理
+            List<CompletableFuture<BufferTemp>> futureList = new ArrayList<>();
             List<BufferTemp> bufferTemps = new ArrayList<>();
             for (BufferTemp urlTemp : renderBO.getUrls()) {
-                captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()).join();
-                bufferTemps.add(urlTemp);
+                futureList.add(captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
             }
-            return bufferTemps;
+            // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
+            CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
+            return renderBO.getUrls().stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
         } catch (Exception e) {
             throw new TaskRuntimeException("Failed to create browser instance: " + e.getMessage());
         } finally {
             if(Objects.nonNull(browser)){
-                browserPool.returnObject(browser);
+                browserPagePool.returnObject(browser);
             }
         }
 

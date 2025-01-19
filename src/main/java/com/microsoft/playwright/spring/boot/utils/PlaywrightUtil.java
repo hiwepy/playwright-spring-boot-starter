@@ -7,8 +7,11 @@ import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -17,6 +20,60 @@ import java.util.stream.Collectors;
 public class PlaywrightUtil {
 
     private static final String TOKEN_SPLITTER = ";";
+
+    private static Playwright playwright;
+
+    public static synchronized Playwright getInstance() {
+        if(Objects.isNull(playwright)){
+            log.info("Create Playwright Instance .");
+            playwright = Playwright.create();
+            log.info("Playwright instance created.");
+        }
+        return playwright;
+    }
+
+    public static synchronized void close(Function<Playwright, ?> function) {
+        if(Objects.nonNull(playwright)){
+            playwright.close();
+            playwright = null;
+            log.info("Playwright instance closed.");
+        }
+    }
+
+    private static Map<PlaywrightProperties.BrowserType, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
+
+    public static BrowserType getBrowserType(Playwright playwright, PlaywrightProperties.BrowserType browserType) {
+        switch (browserType) {
+            case chromium:
+                return playwright.chromium();
+            case webkit:
+                return playwright.webkit();
+            case firefox:
+                return playwright.firefox();
+            default:
+                throw new IllegalArgumentException("browserType is not supported");
+        }
+    }
+
+    public static Browser launchBrowser(Playwright playwright, PlaywrightProperties.BrowserType browserType, BrowserType.LaunchOptions launchOptions) {
+        BrowserType browserTypeObj =  getBrowserType(playwright, browserType);
+        BROWSER_CACHE_MAP.computeIfAbsent(browserType, k -> browserTypeObj.launch(launchOptions));
+        BROWSER_CACHE_MAP.put(browserType, browserTypeObj.launch(launchOptions));
+        return getBrowserType(playwright, browserType).launch(launchOptions);
+    }
+
+    public static void cleanupBrowser(Browser browser) {
+        if (Objects.isNull(browser)) {
+            return;
+        }
+        browser.contexts().forEach(context -> {
+            List<Page> pages = context.pages();
+            if (Objects.nonNull(pages) && !pages.isEmpty()) {
+                pages.forEach(PlaywrightUtil::closePage);
+            }
+            context.clearCookies();
+        });
+    }
 
     /**
      * 获取cookie
@@ -73,19 +130,6 @@ public class PlaywrightUtil {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
-    }
-
-    public static BrowserType getBrowserType(Playwright playwright, PlaywrightProperties.BrowserType browserType) {
-        switch (browserType) {
-            case chromium:
-                return playwright.chromium();
-            case webkit:
-                return playwright.webkit();
-            case firefox:
-                return playwright.firefox();
-            default:
-                throw new IllegalArgumentException("browserType is not supported");
-        }
     }
 
     public static void closePage(Page page) {

@@ -1,0 +1,124 @@
+package com.microsoft.playwright.spring.boot.pool;
+
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.options.BrowserNewPageOptions;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.PooledObjectFactory;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
+
+import java.util.Objects;
+
+@Slf4j
+public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>, AutoCloseable {
+
+    /**
+     * 浏览器
+     */
+    private final Browser browser;
+    private final BrowserNewPageOptions browserNewPageOptions;
+
+    public BrowserPagePooledObjectFactory(Browser browser, BrowserNewPageOptions browserNewPageOptions) {
+        this.browser = browser;
+        this.browserNewPageOptions = browserNewPageOptions;
+    }
+
+    /**
+     * 从池中取出一个池中物（playwright）时调用
+     * @param p a {@code PooledObject} wrapping the instance to be activated
+     *
+     * @throws Exception if there is a problem activating {@code obj}
+     */
+    @Override
+    public void activateObject(PooledObject<Page> p) throws Exception {
+        Page page = p.getObject();
+        log.info("Activate Page Instance '{}'.", page);
+        if(Objects.nonNull(page)){
+            page.bringToFront();
+        }
+    }
+
+    /**
+     * 销毁一个池中物（playwright）时调用
+     * @param p a {@code PooledObject} wrapping the instance to be destroyed
+     *
+     * @throws Exception if there is a problem destroying {@code obj}
+     */
+    @Override
+    public void destroyObject(PooledObject<Page> p) throws Exception {
+        Page page = p.getObject();
+        if (Objects.isNull(page)) {
+            log.warn("Destroy Page Instance Error, Page is null.");
+            return;
+        }
+        if (page.isClosed()) {
+            log.warn("Destroy Page Instance Error, Page is already closed.");
+            return;
+        }
+        try {
+            log.info("Destroy Page Instance '{}'.", page);
+            page.close();
+        } catch (Exception e) {
+            log.error("Destroy Page Instance '{}' Error.", page, e);
+        }
+    }
+
+    /**
+     * 创建池中物（Browser）
+     * @return a new instance that can be served by the pool
+     * @throws Exception if there is a problem creating a new instance
+     */
+    @Override
+    public PooledObject<Page> makeObject() throws Exception {
+
+        // Get playwright instance
+        Playwright playwright = PlaywrightUtil.getInstance();
+
+        Browser browser = this.browser;
+        Browser.NewPageOptions launchOptions = browserNewPageOptions.toOptions();
+        Page page = browser.newPage(launchOptions);
+        log.info("Create Page Instance '{}', Success.", page);
+        return new DefaultPooledObject<>(page);
+    }
+
+    /**
+     * 归还一个池中物（Browser）时调用，不应该 activateObject冲突
+     * @param p a {@code PooledObject} wrapping the instance to be passivated
+     *
+     * @throws Exception if there is a problem passivating {@code obj}
+     */
+    @Override
+    public void passivateObject(PooledObject<Page> p) throws Exception {
+        Page page = p.getObject();
+        log.info("Return Page Instance '{}'.", page);
+    }
+
+    /**
+     * 检测对象是否"有效";Pool中不能保存无效的"对象",因此"后台检测线程"会周期性的检测Pool中"对象"的有效性,如果对象无效则会导致此对象从Pool中移除,并destroy;此外在调用者从Pool获取一个"对象"时,也会检测"对象"的有效性,确保不能讲"无效"的对象输出给调用者;当调用者使用完毕将"对象归还"到Pool时,仍然会检测对象的有效性.所谓有效性,就是此"对象"的状态是否符合预期,是否可以对调用者直接使用;如果对象是Socket,那么它的有效性就是socket的通道是否畅通/阻塞是否超时等.
+     * 这里若要检测，需要在PoolConfig中配置检测项目。
+     * true：检测正常，符合预期；false：异常，销毁对象
+     * @param p a {@code PooledObject} wrapping the instance to be validated
+     *
+     * @return {@code false} if this object is not currently valid and should be dropped from the pool, {@code true} otherwise.
+     */
+    @Override
+    public boolean validateObject(PooledObject<Page> p) {
+        Page page = p.getObject();
+        boolean isBrowserValidated = Objects.nonNull(browser) && browser.isConnected();
+        log.info("Validate Browser : {}, isValidated : {}", browser, isBrowserValidated);
+        boolean isPageValidated = Objects.nonNull(page) && page.isClosed();
+        log.info("Validate Page : {}, isValidated : {}", browser, isPageValidated);
+        return isBrowserValidated && isPageValidated;
+    }
+
+    @Override
+    public void close() throws Exception {
+        PlaywrightUtil.cleanupBrowser(browser);
+        browser.close();
+        log.info("Destroy Browser Instance Success.");
+    }
+
+}
