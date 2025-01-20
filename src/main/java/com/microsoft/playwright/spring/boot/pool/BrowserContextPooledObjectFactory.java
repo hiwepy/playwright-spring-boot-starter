@@ -5,9 +5,11 @@ import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
@@ -16,10 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
+    private static final String USER_DATA_DIR_PREFIX = "browser-context-%s";
+    private final AtomicInteger atomicInteger = new AtomicInteger(0);
     /**
      * Playwright管理容器
      */
@@ -111,6 +116,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             playwright.close();
             log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
+        atomicInteger.decrementAndGet();
     }
 
     public void cleanupBrowserContext(BrowserContext browserContext) {
@@ -132,7 +138,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             }
         }
         List<Page> pages = browserContext.pages();
-        if (!pages.isEmpty()) {
+        if (!CollectionUtils.isEmpty(pages)) {
             for (Page page : pages) {
                 if (page.isClosed()) {
                     continue;
@@ -153,7 +159,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Create Playwright Instance '{}' Success.", playwright);
         BrowserContext browserContext = null;
         if (Objects.nonNull(launchPersistentOptions)) {
-            File userDataDir = new File(userDataRootDir, String.valueOf(System.currentTimeMillis()));
+            File userDataDir = new File(userDataRootDir,  String.format(USER_DATA_DIR_PREFIX, atomicInteger.get()));
             if(!userDataDir.exists()){
                 userDataDir.mkdirs();
             }
@@ -168,6 +174,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
         }
         PLAYWRIGHT_MAP.put(browserContext, playwright);
+        atomicInteger.incrementAndGet();
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -183,9 +190,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Return BrowserContext Instance '{}'.", browserContext);
         if(Objects.nonNull(browserContext)){
             browserContext.clearCookies();
-            browserContext.pages().forEach(page -> {
-                PlaywrightUtil.closePage(page);
-            });
+            browserContext.pages().forEach(PlaywrightUtil::closePage);
             log.info("Return BrowserContext Instance : clear cookies success");
         }
     }
