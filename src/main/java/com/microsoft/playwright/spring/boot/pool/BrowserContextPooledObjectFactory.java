@@ -125,8 +125,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
         browserContext.clearCookies();
-        log.info("Cleanup BrowserContext Permissions '{}'.", browserContext);
-        browserContext.clearPermissions();
         File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
         if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
             log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
@@ -161,7 +159,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         if (Objects.nonNull(launchPersistentOptions)) {
             File userDataDir = new File(userDataRootDir,  String.format(USER_DATA_DIR_PREFIX, atomicInteger.get()));
             if(!userDataDir.exists()){
-                userDataDir.mkdirs();
+                FileUtils.forceMkdir(userDataDir);
             }
             browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
                     .launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);

@@ -30,18 +30,20 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
-	private BrowserType browserType = BrowserType.chromium;
-
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
 	/**
+	 * Browser type. Defaults to {@link BrowserType#chromium chromium}.
+	 */
+	private BrowserType browserType = BrowserType.chromium;
+	/**
 	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
 	 */
-	public BrowserMode browserMode = BrowserMode.incognito;
+	private BrowserMode browserMode = BrowserMode.incognito;
 	/**
-	 * Browser Pool Config
+	 * Browser Context Pool Config
 	 */
-	private BrowserContextPoolConfig browserPool = new BrowserContextPoolConfig();
+	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
@@ -59,6 +61,10 @@ public class PlaywrightProperties {
 	 */
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
 	/**
+	 * New Page Options
+	 */
+	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
+	/**
 	 * Page Navigate Options
 	 */
 	private PageNavigateOptions pageNavigateOptions = new PageNavigateOptions();
@@ -67,9 +73,13 @@ public class PlaywrightProperties {
 	 */
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
 	/**
-	 * Page Set Content Options
+	 * Page Element Screenshot Options
 	 */
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
+	/**
+	 * Page Pdf Options
+	 */
+	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
 	public enum BrowserType {
 		chromium,

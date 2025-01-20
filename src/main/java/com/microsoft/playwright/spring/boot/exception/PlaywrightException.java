@@ -23,4 +23,5 @@ public class PlaywrightException extends RuntimeException {
     public PlaywrightException(Throwable cause){
         super(cause);
     }
+
 }

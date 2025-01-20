@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -21,9 +22,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@SpringBootApplication
+//@SpringBootApplication
 @Slf4j
-public class PlaywrightApplication_Test2 implements CommandLineRunner {
+public class PlaywrightPdfApplication_Test4 implements CommandLineRunner {
 
     protected static final String BASE_DIR = "D://tmp";
 
@@ -31,7 +32,7 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
     private BrowserContextPool browserContextPool;
 
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(PlaywrightApplication_Test2.class, args);
+        SpringApplication.run(PlaywrightPdfApplication_Test4.class, args);
     }
 
     @Override

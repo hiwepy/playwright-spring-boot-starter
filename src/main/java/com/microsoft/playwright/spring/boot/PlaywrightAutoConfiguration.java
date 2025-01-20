@@ -57,7 +57,7 @@ public class PlaywrightAutoConfiguration {
         Runtime.getRuntime().addShutdownHook(new PlaywrightHook(factory, 0));
 
         // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
+        GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserContextPool().toPoolConfig();
         poolConfig.setJmxEnabled(Boolean.FALSE);
         poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserContextPool.class));
 

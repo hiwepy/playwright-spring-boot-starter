@@ -5,33 +5,34 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.io.*;
+import java.io.File;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@SpringBootApplication
+//@SpringBootApplication
 @Slf4j
-public class PlaywrightApplication_Test1 implements CommandLineRunner {
+public class PlaywrightScreenshotApplication_Test4 implements CommandLineRunner {
 
     protected static final String BASE_DIR = "D://tmp";
+
     @Autowired
     private BrowserContextPool browserContextPool;
 
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(PlaywrightApplication_Test1.class, args);
+        SpringApplication.run(PlaywrightScreenshotApplication_Test4.class, args);
     }
 
     @Override
@@ -39,25 +40,13 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
         try {
             FileUtils.forceMkdir( new File(BASE_DIR));
             // 截图测试
-            captureScreenshot(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build(), null).whenComplete((pdf, throwable) -> {
-                try(ByteArrayInputStream input = new ByteArrayInputStream(pdf.getBuffer());) {
-                    IOUtils.copy(input, new FileOutputStream(new File(BASE_DIR, "test.png")));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).exceptionally(throwable -> {
+            captureScreenshot(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build(), null).exceptionally(throwable -> {
                 throwable.printStackTrace();
                 return null;
             }).join();
 
             // 生成pdf测试
-            pageToPdf(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build()).whenComplete((pdf, throwable) -> {
-                try(ByteArrayInputStream input = new ByteArrayInputStream(pdf.getBuffer());) {
-                    IOUtils.copy(input, new FileOutputStream(new File(BASE_DIR, "test.pdf")));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).exceptionally(throwable -> {
+            pageToPdf(UUID.randomUUID().toString(), BufferTemp.builder().url("https://www.baidu.com").index(1).build()).exceptionally(throwable -> {
                 throwable.printStackTrace();
                 return null;
             }).join();
@@ -109,16 +98,17 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
                         .setWaitUntil(WaitUntilState.NETWORKIDLE));
                 // 定义截图输出路径
                 String fileName = String.format("%s.png", urlTemp.getIndex());
-                log.info("screenshot start for {} : {}", rendeId, fileName);
+                File screenshotFile = new File(BASE_DIR, rendeId + File.separator + fileName);
+                log.info("screenshot start for : {}", screenshotFile.getAbsolutePath());
                 // 截图
-                byte[] screenshotBuffer;
                 if(StringUtils.isEmpty(selector)){
                     Page.ScreenshotOptions options = new Page.ScreenshotOptions()
                             .setFullPage(true)
                             .setOmitBackground(true)
                             .setTimeout(30 * 1000)
-                            .setType(ScreenshotType.PNG);
-                    screenshotBuffer = page.screenshot(options);
+                            .setType(ScreenshotType.PNG)
+                            .setPath(screenshotFile.toPath());
+                    page.screenshot(options);
                 } else {
 
                     // 定位到要截图的元素
@@ -127,13 +117,13 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
                     ElementHandle.ScreenshotOptions options = new ElementHandle.ScreenshotOptions()
                             .setOmitBackground(true)
                             .setTimeout(30 * 1000)
-                            .setType(ScreenshotType.PNG);
+                            .setType(ScreenshotType.PNG)
+                            .setPath(screenshotFile.toPath());
 
-                    // 截取指定元素的屏幕截图
-                    screenshotBuffer = element.screenshot(options);
+                    element.screenshot(options);
                 }
-                log.info("screenshot success for {} : {}", rendeId, fileName);
-                urlTemp.setBuffer(screenshotBuffer);
+                log.info("screenshot success for {} : {}", rendeId, screenshotFile.getAbsolutePath());
+                urlTemp.setPath(screenshotFile.getAbsolutePath());
                 urlTemp.setName(fileName);
                 browserContextPool.returnObject(page.context());
                 //browserPagePool.returnObject(page);
@@ -150,7 +140,6 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
                 }
             }
         });
-
     }
 
     /**
@@ -176,7 +165,7 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
     protected CompletableFuture<BufferTemp> pageToPdf(String rendeId, BufferTemp urlTemp) {
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
-            log.info("Generate PDF for url: %s", urlTemp.getUrl());
+            log.info("Generate PDF for url: {}", urlTemp.getUrl());
             Page page = null;
             try {
                 // 从池中获取一个浏览器页面
@@ -187,19 +176,20 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
                         .setWaitUntil(WaitUntilState.NETWORKIDLE));
                 // 定义截图输出路径
                 String fileName = String.format("%s.pdf", urlTemp.getIndex());
-                log.info("Generate pdf buffer start for : {}", fileName);
+                File pdfFile = new File(BASE_DIR, rendeId + File.separator + fileName);
+                log.info("Generate pdf file start for : {}", pdfFile.getAbsolutePath());
                 page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
                 // 生成PDF
                 Page.PdfOptions pdfOptions = new Page.PdfOptions()
-                        .setScale(1.0)
+                        .setScale(1.0f)
                         .setPageRanges("1-1")
                         .setFormat("A3")
-                        .setPrintBackground(true);
-                byte[] pdfBuffer = page.pdf(pdfOptions);
-                log.info("Generate pdf buffer success for : {}", fileName);
-                urlTemp.setBuffer(pdfBuffer);
+                        .setPrintBackground(true)
+                        .setPath(pdfFile.toPath());
+                page.pdf(pdfOptions);
+                log.info("Generate pdf file success for : {}", pdfFile.getAbsolutePath());
+                urlTemp.setPath(pdfFile.getAbsolutePath());
                 urlTemp.setName(fileName);
-                // 释放页面对象
                 browserContextPool.returnObject(page.context());
                 return urlTemp;
             } catch (Exception e) {
