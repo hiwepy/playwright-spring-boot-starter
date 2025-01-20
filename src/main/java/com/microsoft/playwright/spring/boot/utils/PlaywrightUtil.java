@@ -55,15 +55,15 @@ public class PlaywrightUtil {
         }
     }
 
-    public static Browser  launchBrowser(Playwright playwright, PlaywrightProperties.BrowserType browserType, BrowserType.LaunchOptions launchOptions) {
+    public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserType browserType, BrowserType.LaunchOptions launchOptions) {
         BrowserType browserTypeObj = getBrowserType(playwright, browserType);
         Browser browser = BROWSER_CACHE_MAP.get(browserType);
-        if (Objects.nonNull(browser) && !browser.isClosed()) {
+        if (Objects.nonNull(browser) && !browser.isConnected()) {
             return browser;
         }
-        BROWSER_CACHE_MAP.computeIfAbsent(browserType, k -> browserTypeObj.launch(launchOptions));
-        BROWSER_CACHE_MAP.put(browserType, browserTypeObj.launch(launchOptions));
-        return getBrowserType(playwright, browserType).launch(launchOptions);
+        browser = browserTypeObj.launch(launchOptions);
+        BROWSER_CACHE_MAP.put(browserType, browser);
+        return browser;
     }
 
     public static void cleanupBrowser(Browser browser) {

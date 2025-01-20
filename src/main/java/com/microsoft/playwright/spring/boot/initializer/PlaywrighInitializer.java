@@ -21,7 +21,7 @@ public class PlaywrighInitializer implements Runnable {
         Playwright playwright = PlaywrightUtil.getInstance();
         // Lanuch Browser
         BrowserType.LaunchOptions options = playwrightProperties.getLaunchOptions().toOptions();
-        PlaywrightUtil.launchBrowser(playwright, playwrightProperties.getBrowserType(), options);
+        PlaywrightUtil.getBrowser(playwright, playwrightProperties.getBrowserType(), options);
     }
 
 }

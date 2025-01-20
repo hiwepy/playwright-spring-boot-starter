@@ -1,6 +1,8 @@
 package com.microsoft.playwright.spring.boot;
 
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.initializer.BrowserContextInitializer;
 import com.microsoft.playwright.spring.boot.initializer.BrowserPageInitializer;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
@@ -16,9 +18,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
-
-import java.util.Objects;
 
 @Configuration
 @ConditionalOnClass({ Playwright.class, PooledObjectFactory.class })
@@ -29,8 +28,7 @@ public class PlaywrightAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public BrowserPagePooledObjectFactory browserPooledObjectFactory(PlaywrightProperties playwrightProperties){
-        BrowserType.LaunchOptions launchOptions = playwrightProperties.getLaunchOptions().toOptions();
-        return new BrowserPagePooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions);
+        return new BrowserPagePooledObjectFactory(playwrightProperties);
     }
 
     @Bean
@@ -38,7 +36,7 @@ public class PlaywrightAutoConfiguration {
     public BrowserPagePool browserPool(PlaywrightProperties playwrightProperties, BrowserPagePooledObjectFactory browserPagePooledObjectFactory){
 
         // 1、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<Page> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
+        GenericObjectPoolConfig<Page> poolConfig = playwrightProperties.getBrowserPagePool().toPoolConfig();
         poolConfig.setJmxEnabled(Boolean.FALSE);
         poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserPagePool.class));
 
@@ -57,24 +55,7 @@ public class PlaywrightAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public BrowserContextPooledObjectFactory browserContextPooledObjectFactory(PlaywrightProperties playwrightProperties){
-
-        Browser.NewContextOptions newContextOptions = playwrightProperties.getNewContextOptions().toOptions();
-        BrowserContextPooledObjectFactory factory;
-        if (Objects.requireNonNull(playwrightProperties.getBrowserMode()) == PlaywrightProperties.BrowserMode.persistent) {
-            BrowserType.LaunchPersistentContextOptions launchPersistentOptions = playwrightProperties.getLaunchPersistentOptions().toOptions();
-            String userDataRootDir;
-            if (StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())) {
-                userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
-            } else {
-                userDataRootDir = System.getProperty("java.io.tmpdir");
-            }
-            factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataRootDir);
-        } else {
-            BrowserType.LaunchOptions launchOptions = playwrightProperties.getLaunchOptions().toOptions();
-            factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions, newContextOptions);
-        }
-
-        return factory;
+        return new BrowserContextPooledObjectFactory(playwrightProperties);
     }
 
     @Bean

@@ -3,6 +3,7 @@ package com.microsoft.playwright.spring.boot.pool;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.options.BrowserNewPageOptions;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -15,15 +16,10 @@ import java.util.Objects;
 @Slf4j
 public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>, AutoCloseable {
 
-    /**
-     * 浏览器
-     */
-    private final Browser browser;
-    private final BrowserNewPageOptions browserNewPageOptions;
+    private final PlaywrightProperties playwrightProperties;
 
-    public BrowserPagePooledObjectFactory(Browser browser, BrowserNewPageOptions browserNewPageOptions) {
-        this.browser = browser;
-        this.browserNewPageOptions = browserNewPageOptions;
+    public BrowserPagePooledObjectFactory(PlaywrightProperties playwrightProperties) {
+        this.playwrightProperties = playwrightProperties;
     }
 
     /**
@@ -78,7 +74,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         Playwright playwright = PlaywrightUtil.getInstance();
 
         Browser browser = this.browser;
-        Browser.NewPageOptions launchOptions = browserNewPageOptions.toOptions();
+        Browser.NewPageOptions launchOptions = playwrightProperties.getNewPageOptions().toOptions();
         Page page = browser.newPage(launchOptions);
         log.info("Create Page Instance '{}', Success.", page);
         return new DefaultPooledObject<>(page);

@@ -16,63 +16,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
-    /**
-     */
     private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
-    /**
-     * 浏览器类型
-     */
-    private PlaywrightProperties.BrowserType browserType = PlaywrightProperties.BrowserType.chromium;
-    /**
-     * 无痕模式启动浏览器参数
-     */
-    private BrowserType.LaunchOptions launchOptions;
-    /**
-     * 创建新的浏览器上下文参数
-     */
-    private Browser.NewContextOptions newContextOptions = new Browser.NewContextOptions().setScreenSize(1920, 1080);
-    /**
-     * 非无痕模式启动浏览器参数
-     */
-    private BrowserType.LaunchPersistentContextOptions launchPersistentOptions;
-    private String userDataRootDir;
-    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
-                                             BrowserType.LaunchOptions launchOptions,
-                                             Browser.NewContextOptions newContextOptions) {
-        if (Objects.nonNull(browserType)) {
-            this.browserType = browserType;
-        }
-        if (Objects.nonNull(launchOptions)) {
-            this.launchOptions = launchOptions;
-        } else {
-            this.launchOptions = new BrowserType.LaunchOptions().setHeadless(true);
-        }
-        if (Objects.nonNull(newContextOptions)) {
-            this.newContextOptions = newContextOptions;
-        }
-    }
+    private final PlaywrightProperties playwrightProperties;
+    private AtomicInteger atomicInteger = new AtomicInteger(0);
 
-    public BrowserContextPooledObjectFactory(PlaywrightProperties.BrowserType browserType,
-                                             BrowserType.LaunchPersistentContextOptions launchPersistentOptions,
-                                             String userDataRootDir) {
-        if (Objects.nonNull(browserType)) {
-            this.browserType = browserType;
-        }
-        if (Objects.nonNull(launchPersistentOptions)) {
-            this.launchPersistentOptions = launchPersistentOptions;
-        } else {
-            this.launchPersistentOptions = new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
-        }
-        if (StringUtils.hasText(userDataRootDir)) {
-            this.userDataRootDir = userDataRootDir;
-        } else {
-            this.userDataRootDir = System.getProperty("java.io.tmpdir");
-        }
+    public BrowserContextPooledObjectFactory(PlaywrightProperties playwrightProperties) {
+        this.playwrightProperties = playwrightProperties;
     }
 
     /**
@@ -105,6 +61,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         // Cleanup browser context
         cleanupBrowserContext(browserContext);
         browserContext.close();
+        atomicInteger.decrementAndGet();
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
     }
 
@@ -142,12 +99,26 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
+
+        // Browser Type
+        PlaywrightProperties.BrowserType browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserType.chromium;
         // Get playwright instance
         Playwright playwright = PlaywrightUtil.getInstance();
         // Create browser context
         BrowserContext browserContext = null;
-        if (Objects.nonNull(launchPersistentOptions)) {
-            File userDataDir = new File(userDataRootDir, String.valueOf(System.currentTimeMillis()));
+        if (Objects.requireNonNull(playwrightProperties.getBrowserMode()) == PlaywrightProperties.BrowserMode.persistent) {
+            // 浏览器启动参数
+            BrowserType.LaunchPersistentContextOptions launchPersistentOptions = Objects.nonNull(playwrightProperties.getLaunchPersistentOptions()) ?  playwrightProperties.getLaunchPersistentOptions().toOptions() : new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
+            String userDataRootDir;
+            if (StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())) {
+                userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
+            } else {
+                userDataRootDir = System.getProperty("java.io.tmpdir");
+            }
+            browser-context-1
+            atomicInteger.get()
+
+            File userDataDir = new File(userDataRootDir, UUID.randomUUID().toString());
             if(!userDataDir.exists()){
                 userDataDir.mkdirs();
             }
@@ -155,12 +126,19 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                     .launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
             USER_DATA_DIR_MAP.put(browserContext, userDataDir);
             log.info("Create Persistent BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
+
         } else {
-            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
-                    .launch(launchOptions)
-                    .newContext(newContextOptions);
+            // Get Browser Launch Options
+            BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
+            // Get Browser
+            Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
+            // Get Browser New Context Options
+            Browser.NewContextOptions newContextOptions = Objects.nonNull(playwrightProperties.getNewContextOptions()) ? playwrightProperties.getNewContextOptions().toOptions() : new Browser.NewContextOptions().setScreenSize(1920, 1080);
+            // Create Browser Context
+            browserContext = browser.newContext(newContextOptions);
             log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
         }
+        atomicInteger.incrementAndGet();
         return new DefaultPooledObject<>(browserContext);
     }
 
