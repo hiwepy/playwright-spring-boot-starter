@@ -5,12 +5,9 @@ import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
-    private static final String USER_DATA_DIR_PREFIX = "browser-context-%s";
+    /**
+     * Playwright管理容器
+     */
+    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
     private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
     private final PlaywrightProperties playwrightProperties;
-    private final AtomicInteger atomicInteger = new AtomicInteger(0);
 
     public BrowserContextPooledObjectFactory(PlaywrightProperties playwrightProperties) {
         this.playwrightProperties = playwrightProperties;
@@ -62,35 +60,13 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         // Cleanup browser context
         cleanupBrowserContext(browserContext);
         browserContext.close();
-        atomicInteger.decrementAndGet();
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
-    }
-
-    public void cleanupBrowserContext(BrowserContext browserContext) {
-        if (Objects.isNull(browserContext)) {
-            return;
+        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+        if (Objects.nonNull(playwright)) {
+            playwright.close();
+            log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
-        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
-        browserContext.clearCookies();
-        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
-        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
-            log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
-            try {
-                FileUtils.deleteDirectory(userDataDir);
-                log.info("Deleted user data directory: {}", userDataDir);
-            } catch (IOException e) {
-                log.error("Failed to delete user data directory: {}", userDataDir, e);
-            }
-        }
-        List<Page> pages = browserContext.pages();
-        if (!CollectionUtils.isEmpty(pages)) {
-            for (Page page : pages) {
-                if (page.isClosed()) {
-                    continue;
-                }
-                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
-            }
-        }
+        log.info("Destroy BrowserContext Instance '{}'.", browserContext);
     }
 
     /**
@@ -100,41 +76,21 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
+        // Get playwright instance (需要每次创建新的实例，否则会报错)
+        Playwright playwright = Playwright.create();
+        log.info("Create Playwright Instance '{}' Success.", playwright);
         // Browser Type
-        PlaywrightProperties.BrowserType browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserType.chromium;
-        // Get playwright instance
-        Playwright playwright = PlaywrightUtil.getInstance();
-        // Create browser context
-        BrowserContext browserContext = null;
-        if (Objects.requireNonNull(playwrightProperties.getBrowserMode()) == PlaywrightProperties.BrowserMode.persistent) {
-            // 浏览器启动参数
-            BrowserType.LaunchPersistentContextOptions launchPersistentOptions = Objects.nonNull(playwrightProperties.getLaunchPersistentOptions()) ?  playwrightProperties.getLaunchPersistentOptions().toOptions() : new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
-            String userDataRootDir;
-            if (StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())) {
-                userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
-            } else {
-                userDataRootDir = System.getProperty("java.io.tmpdir");
-            }
-            File userDataDir = new File(userDataRootDir,  String.format(USER_DATA_DIR_PREFIX, atomicInteger.get()));
-            if(!userDataDir.exists()){
-                FileUtils.forceMkdir(userDataDir);
-            }
-            // Get Browser Context
-            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType).launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
-            USER_DATA_DIR_MAP.put(browserContext, userDataDir);
-            log.info("Create Persistent BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
-        } else {
-            // Get Browser Launch Options
-            BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
-            // Get Browser
-            Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
-            // Get Browser New Context Options
-            Browser.NewContextOptions newContextOptions = Objects.nonNull(playwrightProperties.getNewContextOptions()) ? playwrightProperties.getNewContextOptions().toOptions() : new Browser.NewContextOptions().setScreenSize(1920, 1080);
-            // Create Browser Context
-            browserContext = browser.newContext(newContextOptions);
-            log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
-        }
-        atomicInteger.incrementAndGet();
+        PlaywrightProperties.BrowserTypeEnum browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserTypeEnum.chromium;
+        // Get Browser Launch Options
+        BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
+        // Get Browser
+        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
+        // Get Browser New Context Options
+        Browser.NewContextOptions newContextOptions = Objects.nonNull(playwrightProperties.getNewContextOptions()) ? playwrightProperties.getNewContextOptions().toOptions() : new Browser.NewContextOptions().setScreenSize(1920, 1080);
+        // Create Browser Context
+        BrowserContext browserContext = browser.newContext(newContextOptions);
+        log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
+        PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -173,8 +129,43 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     @Override
     public void close() throws Exception {
-        PlaywrightUtil.close( playwright -> null);
+        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
+            // Cleanup browser context
+            cleanupBrowserContext(browserContext);
+            browserContext.close();
+            if (Objects.nonNull(playwright)) {
+                playwright.close();
+                log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
+            }
+        });
         log.info("Destroy BrowserContext of Playwright Instance Success.");
+    }
+
+    public void cleanupBrowserContext(BrowserContext browserContext) {
+        if (Objects.isNull(browserContext)) {
+            return;
+        }
+        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
+        browserContext.clearCookies();
+        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
+        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
+            log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
+            try {
+                FileUtils.deleteDirectory(userDataDir);
+                log.info("Deleted user data directory: {}", userDataDir);
+            } catch (IOException e) {
+                log.error("Failed to delete user data directory: {}", userDataDir, e);
+            }
+        }
+        List<Page> pages = browserContext.pages();
+        if (!pages.isEmpty()) {
+            for (Page page : pages) {
+                if (page.isClosed()) {
+                    continue;
+                }
+                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
+            }
+        }
     }
 
 }

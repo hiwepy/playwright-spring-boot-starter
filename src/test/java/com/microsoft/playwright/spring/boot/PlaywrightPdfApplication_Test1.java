@@ -69,7 +69,7 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        //List<String> reportUrls = Arrays.asList("https://www.baidu.com", "https://www.baidu.com");
+        List<String> reportUrls = Arrays.asList("https://www.baidu.com", "https://www.baidu.com");
 
         Map<String, Object> params = new HashMap<>();
         params.put("report_urls", reportUrls);
@@ -78,12 +78,12 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         //renderBO.setSchoolCode(schoolCode);
         //renderBO.setUserId(userId);
         renderBO.setSelector(".growthMain");
-        renderBO.setQuality(80);
+        renderBO.setQuality(100);
         renderBO.setCompress(false);
         renderBO.setPageSize("A4");
         renderBO.setParam(Base64Utils.encodeToString(JSON.toJSONString(params).getBytes()));
         renderBO.setRanderId(Objects.toString(sequence.nextId()));
-        renderBO.setType(3);
+        renderBO.setAsync(true);
         WkhtmlRenderResultVO resultBO = null;
         try {
             // 2.2、渲染 PDF
@@ -93,7 +93,7 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
             log.error("pdf生成失败;", e);
         } finally {
             // 3、删除临时文件
-            renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
+            //renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
         }
     }
 

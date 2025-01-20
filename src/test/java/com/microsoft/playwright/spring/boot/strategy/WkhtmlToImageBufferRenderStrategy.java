@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -52,33 +53,26 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
      */
     protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
-/*
-        try {
+        if(renderBO.isAsync()){
             // 1、使用CompletableFuture异步处理
-
-            try(Browser browser = PlaywrightUtil.getBrowser(playwrightProperties)) {
-                List<CompletableFuture<BufferTemp>> futureList = new ArrayList<>();
+            List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
+                    .map(urlTemp -> captureScreenshotAsync(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
+                    .collect(Collectors.toList());
+            // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
+            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+            CompletableFuture<List<BufferTemp>> resultFuture = allFuture
+                    .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
+            return resultFuture.join();
+        } else {
+            try(Playwright playwright = Playwright.create();
+                Browser browser = PlaywrightUtil.getBrowser(playwright, playwrightProperties)) {
+                List<BufferTemp> futureList = new ArrayList<>();
                 for (BufferTemp urlTemp : renderBO.getUrls()) {
-                    futureList.add(captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
+                    futureList.add(captureScreenshotSync(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
                 }
-                // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-                //CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
-                return renderBO.getUrls().stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
+                return futureList.stream().filter(urlTemp -> StringUtils.isNotBlank(urlTemp.getPath())).collect(Collectors.toList());
             }
-
-
-        } catch (Exception e) {
-            throw new TaskRuntimeException("Failed to create browser instance: " + e.getMessage());
-        }*/
-        // 1、使用CompletableFuture异步处理
-        List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
-                .map(urlTemp -> captureScreenshotFuture1(null, renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
-                .collect(Collectors.toList());
-        // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
-        CompletableFuture<List<BufferTemp>> resultFuture = allFuture
-                .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
-        return resultFuture.join();
+        }
     }
 
     @Override

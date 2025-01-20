@@ -63,6 +63,8 @@ public class WkhtmlRenderBO implements Serializable {
      * PDF 页面大小，LETTER, LEGAL, A0, A1, A2, A3, A4, A5, A6
      */
     private String pageSize;
-
-    private Integer type;
+    /**
+     * 是否异步处理每页截图/生成PDF
+     */
+    private boolean async;
 }

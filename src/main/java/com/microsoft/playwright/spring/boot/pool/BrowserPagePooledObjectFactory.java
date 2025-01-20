@@ -32,9 +32,6 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public void activateObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
         log.info("Activate Browser Page Instance '{}'.", page);
-        if(Objects.nonNull(page)){
-            page.bringToFront();
-        }
     }
 
     /**
@@ -69,13 +66,22 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public PooledObject<Page> makeObject() throws Exception {
+        // Get playwright instance (需要每次创建新的实例，否则会报错)
+        Playwright playwright = Playwright.create();
+        log.info("Create Playwright Instance '{}' Success.", playwright);
+        // Browser Type
+        PlaywrightProperties.BrowserTypeEnum browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserTypeEnum.chromium;
+        // Get Browser Launch Options
+        BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
+        // Get Browser
+        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
         // Create Browser Page
         Page page;
         if(Objects.nonNull(playwrightProperties.getNewPageOptions())){
             Browser.NewPageOptions newPageOptions = playwrightProperties.getNewPageOptions().toOptions();
-            page = PlaywrightUtil.getBrowser(playwrightProperties).newPage(newPageOptions);
+            page = browser.newPage(newPageOptions);
         } else {
-            page = PlaywrightUtil.getBrowser(playwrightProperties).newPage();
+            page = browser.newPage();
         }
         log.info("Create Browser Page Instance '{}', Success.", page);
         return new DefaultPooledObject<>(page);
@@ -109,7 +115,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
             boolean isPageValidated = !page.isClosed() && page.context().browser().isConnected();
             log.info("Validate Browser Page : {}, isValidated : {}", page, isPageValidated);
         }
-        return false;
+        return true;
     }
 
     @Override

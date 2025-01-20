@@ -15,11 +15,15 @@
  */
 package com.microsoft.playwright.spring.boot;
 
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.function.Function;
 
 /**
  *
@@ -34,17 +38,17 @@ public class PlaywrightProperties {
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
 	/**
-	 * Browser type. Defaults to {@link BrowserType#chromium chromium}.
+	 *  Whether to isolate Browser session. Defaults to {@code false}.
 	 */
-	private BrowserType browserType = BrowserType.chromium;
+	private boolean isolated = false;
 	/**
-	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
+	 * Browser type. Defaults to {@link BrowserTypeEnum#chromium chromium}.
 	 */
-	private BrowserMode browserMode = BrowserMode.incognito;
-	/**
-	 * Browser Page Pool Config
-	 */
-	private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
+	private BrowserTypeEnum browserType = BrowserTypeEnum.chromium;
+    /**
+     * Browser Page Pool Config
+     */
+    private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
@@ -57,10 +61,6 @@ public class PlaywrightProperties {
 	 * Launch Options
 	 */
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
-	/**
-	 * Launch Persistent Options
-	 */
-	private BrowserLaunchPersistentOptions launchPersistentOptions = new BrowserLaunchPersistentOptions();
 	/**
 	 * New Context Options
 	 */
@@ -86,22 +86,20 @@ public class PlaywrightProperties {
 	 */
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
-	public enum BrowserType {
-		chromium,
-		firefox,
-		webkit
-	}
+	public enum BrowserTypeEnum {
+		chromium(Playwright::chromium),
+		firefox(Playwright::firefox),
+		webkit(Playwright::webkit);
 
-	public enum BrowserMode {
+		Function<Playwright, BrowserType> function;
+		BrowserTypeEnum(Function<Playwright, BrowserType> function) {
+			this.function = function;
+		}
 
-		/**
-		 * Returns the incognito mode browser instance.
-		 */
-		incognito,
-		/**
-		 * Returns the persistent browser context instance.
-		 */
-		persistent
+		public BrowserType getBrowserType(Playwright playwright) {
+			return function.apply(playwright);
+		}
+
 	}
 
 }

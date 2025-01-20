@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -20,63 +19,27 @@ import java.util.stream.Collectors;
 public class PlaywrightUtil {
 
     private static final String TOKEN_SPLITTER = ";";
+    private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
 
-    private static Playwright playwright;
-
-    public static synchronized Playwright getInstance() {
-        if(Objects.isNull(playwright)){
-            log.info("Create Playwright Instance .");
-            playwright = Playwright.create();
-            log.info("Playwright instance created.");
-        }
-        return playwright;
-    }
-
-    public static synchronized void close(Function<Playwright, ?> function) {
-        if(Objects.nonNull(playwright)){
-            playwright.close();
-            playwright = null;
-            log.info("Playwright instance closed.");
-        }
-    }
-
-    private static Map<PlaywrightProperties.BrowserType, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
-
-    public static BrowserType getBrowserType(Playwright playwright, PlaywrightProperties.BrowserType browserType) {
-        switch (browserType) {
-            case chromium:
-                return playwright.chromium();
-            case webkit:
-                return playwright.webkit();
-            case firefox:
-                return playwright.firefox();
-            default:
-                throw new IllegalArgumentException("browserType is not supported");
-        }
-    }
-
-    public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserType browserType, BrowserType.LaunchOptions launchOptions) {
-        BrowserType browserTypeObj = getBrowserType(playwright, browserType);
-        Browser browser = BROWSER_CACHE_MAP.get(browserType);
+    public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserType, BrowserType.LaunchOptions launchOptions) {
+        BrowserType browserTypeObj = browserType.getBrowserType(playwright);
+        /*Browser browser = BROWSER_CACHE_MAP.get(browserType);
         if (Objects.nonNull(browser) && !browser.isConnected()) {
             return browser;
-        }
-        browser = browserTypeObj.launch(launchOptions);
-        BROWSER_CACHE_MAP.put(browserType, browser);
+        }*/
+        Browser browser = browserTypeObj.launch(launchOptions);
+        //BROWSER_CACHE_MAP.put(browserType, browser);
         return browser;
     }
 
-    public static Browser getBrowser(PlaywrightProperties playwrightProperties) {
+    public static Browser getBrowser(Playwright playwright, PlaywrightProperties playwrightProperties) {
         // Browser Type
-        PlaywrightProperties.BrowserType browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserType.chromium;
-        // Get playwright instance
-        Playwright playwright = getInstance();
+        PlaywrightProperties.BrowserTypeEnum browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserTypeEnum.chromium;
         // Get Browser Launch Options
         BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
         // Get Browser
         return getBrowser(playwright, browserType, launchOptions);
     }
-
 
     public static void cleanupBrowser(Browser browser) {
         if (Objects.isNull(browser)) {

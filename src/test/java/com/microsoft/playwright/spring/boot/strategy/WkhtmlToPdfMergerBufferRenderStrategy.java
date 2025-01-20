@@ -1,17 +1,22 @@
 package com.microsoft.playwright.spring.boot.strategy;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
 import com.microsoft.playwright.spring.boot.exception.TaskRuntimeException;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
 import com.microsoft.playwright.spring.boot.util.PdfUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -32,26 +37,36 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
     @Override
     protected List<BufferTemp> doGenerate(WkhtmlRenderBO renderBO) throws IOException {
         // 2、生成截图
-        return this.pageToPdfs(renderBO.getRanderId(), renderBO.getUrls());
+        return this.pageToPdfs(renderBO);
     }
 
     /**
      * 定义一个浏览器内容截图方法
-     * @param rendeId
-     * @param urlTemps
+     * @param renderBO
      * @return
      */
-    protected List<BufferTemp> pageToPdfs(String rendeId, List<BufferTemp> urlTemps) {
-        log.info("Generate PDF for urls: {}", urlTemps.stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
-        // 1、使用CompletableFuture异步处理
-        List<CompletableFuture<BufferTemp>> futureList = urlTemps.stream()
-                .map(urlTemp -> pageToPdfFuture(rendeId, urlTemp))
-                .collect(Collectors.toList());
-        // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
-        CompletableFuture<List<BufferTemp>> resultFuture = allFuture
-                .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
-        return resultFuture.join();
+    protected List<BufferTemp> pageToPdfs(WkhtmlRenderBO renderBO) {
+        log.info("Generate PDF for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
+        if(renderBO.isAsync()) {
+            // 1、使用CompletableFuture异步处理
+            List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
+                    .map(urlTemp -> pageToPdfFutureAsync(renderBO.getRanderId(), urlTemp))
+                    .collect(Collectors.toList());
+            // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
+            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+            CompletableFuture<List<BufferTemp>> resultFuture = allFuture
+                    .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
+            return resultFuture.join();
+        } else {
+            try(Playwright playwright = Playwright.create();
+                Browser browser = PlaywrightUtil.getBrowser(playwright, playwrightProperties)) {
+                List<BufferTemp> tempRtList = new ArrayList<>();
+                for (BufferTemp urlTemp : renderBO.getUrls()) {
+                    tempRtList.add(pageToPdfFutureSync(browser, renderBO.getRanderId(), urlTemp));
+                }
+                return tempRtList.stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
+            }
+        }
     }
 
 

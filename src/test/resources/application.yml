@@ -5,10 +5,18 @@ server:
 ###Playwright（PlaywrightProperties）配置：
 ################################################################################################################
 playwright:
-  browser-pool:
-    max-idle: 1
-    min-idle: 1
-    max-total: 1
+  browser-type: chromium
+  browser-page-pool:
+    max-idle: 8
+    min-idle: 0
+    max-total: 8
+    test-on-borrow: true
+    test-while-idle: true
+    test-on-return: true
+  browser-context-pool:
+    max-idle: 8
+    min-idle: 0
+    max-total: 8
     test-on-borrow: true
     test-while-idle: true
     test-on-return: true
@@ -19,6 +27,7 @@ playwright:
       - '--ignore-certificate-errors'
     slow-mo: 3
   launch-persistent-options:
+    user-data-dir: D://tmp
     headless: false
     args:
       - '--start-maximized'
@@ -36,4 +45,4 @@ playwright:
     reload-limit: 3
     retryable: true
     lower-limit: 100
-    tmp-dir: /tmp
+    tmp-dir: D://tmp
