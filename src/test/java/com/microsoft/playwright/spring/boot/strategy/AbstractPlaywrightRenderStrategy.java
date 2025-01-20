@@ -350,11 +350,11 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         Page.NavigateOptions navigateOptions = playwrightProperties.getPageNavigateOptions().toOptions();
         page.navigate(urlTemp.getUrl(), navigateOptions);
         // 如果设置了加载等待时间，则等待一段时间
-        /*if(Objects.nonNull(playwrightRenderProperties.getLoadWait()) && playwrightRenderProperties.getLoadWait().toMillis() > 0){
+        if(playwrightRenderProperties.isLoadWait() && Objects.nonNull(playwrightRenderProperties.getLoadWaitDuration()) && playwrightRenderProperties.getLoadWaitDuration().toMillis() > 0){
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
-                    log.debug("The page load wait {} milliseconds for : {}", playwrightRenderProperties.getLoadWait().toMillis(), page.url());
-                    Thread.sleep(playwrightRenderProperties.getLoadWait().toMillis());
+                    log.debug("The page load wait {} milliseconds for : {}", playwrightRenderProperties.getLoadWaitDuration().toMillis(), page.url());
+                    Thread.sleep(playwrightRenderProperties.getLoadWaitDuration().toMillis());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     log.error("Thread was interrupted", e);
@@ -363,10 +363,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             // 等待异步任务完成
             future.join();
             log.debug("The page load wait completed for : {}", page.url());
-        }*/
-
-        //assertThat(page).hasTitle(Pattern.compile("Playwright"));
-
+        }
         log.debug("The page load completed for : {}", page.url());
         // 执行回调函数（截图、单页生成pdf）
         BufferTemp applyTemp = callback.apply(page, urlTemp);
@@ -378,7 +375,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }
         // 结果不符合要求，补充重试机制，多次打开页面
         AtomicInteger loadRetry = new AtomicInteger(0);
-        while ( playwrightRenderProperties.isReloadable() && urlTemp.isNeedReload() && loadRetry.incrementAndGet() < playwrightRenderProperties.getReloadLimit()) {
+        while ( playwrightRenderProperties.isReloadAble() && urlTemp.isNeedReload() && loadRetry.incrementAndGet() < playwrightRenderProperties.getReloadLimit()) {
             // 动态调整超时时间
             if(Objects.nonNull(urlTemp.getReloadTimeout())){
                 urlTemp.setReloadTimeout(TimeUtil.getRetryTimeout(urlTemp.getReloadTimeout()));
@@ -393,11 +390,11 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             // 设置重新加载状态为false
             urlTemp.setReload(false);
             // 如果是重试，则等待一段时间
-            /*if(Objects.nonNull(playwrightRenderProperties.getReloadWait()) && playwrightRenderProperties.getReloadWait().toMillis() > 0){
+            if(playwrightRenderProperties.isReloadWait() && Objects.nonNull(playwrightRenderProperties.getReloadWaitDuration()) && playwrightRenderProperties.getReloadWaitDuration().toMillis() > 0){
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     try {
-                        log.debug("The page reload wait {} milliseconds for : {}", playwrightRenderProperties.getLoadWait().toMillis(), page.url());
-                        Thread.sleep(playwrightRenderProperties.getReloadWait().toMillis());
+                        log.debug("The page reload wait {} milliseconds for : {}", playwrightRenderProperties.getReloadWaitDuration().toMillis(), page.url());
+                        Thread.sleep(playwrightRenderProperties.getReloadWaitDuration().toMillis());
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         log.error("Thread was interrupted", e);
@@ -406,7 +403,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 // 等待异步任务完成
                 future.join();
                 log.debug("The page reload wait completed for : {}", page.url());
-            }*/
+            }
             log.debug("The page reload completed for : {} , reloadTimes: {}, reloadTimeout: {}", page.url(), loadRetry.get(), urlTemp.getReloadTimeout());
             // 判断重新加载，再次处理后的结果是否可用，如果可用则返回，无需在进行重试
             if(this.isPresentable(applyTemp)){

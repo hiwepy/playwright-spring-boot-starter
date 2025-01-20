@@ -18,7 +18,7 @@ public class PlaywrightRenderProperties {
 	/**
 	 * 浏览器会话是否隔离
 	 */
-	protected boolean isolated = false;
+	protected boolean isolated;
 
 	/**
 	 * 临时是否写入磁盘
@@ -36,14 +36,18 @@ public class PlaywrightRenderProperties {
 	protected String urlPrefix;
 
 	/**
+	 * 是否加载等待
+	 */
+	private boolean loadWait;
+	/**
 	 * 加载等待时间
 	 */
-	protected Duration loadWait = Duration.ofSeconds(3);
+	protected Duration loadWaitDuration = Duration.ofSeconds(3);
 
 	/**
 	 * 是否运行重新加载
 	 */
-	private boolean reloadable;
+	private boolean reloadAble;
 
 	/**
 	 * 重试加载页面次数
@@ -51,23 +55,18 @@ public class PlaywrightRenderProperties {
 	protected Integer reloadLimit = 3;
 
 	/**
+	 * 是否加加载等待
+	 */
+	private boolean reloadWait;
+
+	/**
 	 * 重加载等待时间
 	 */
-	protected Duration reloadWait = Duration.ofSeconds(3);
+	protected Duration reloadWaitDuration = Duration.ofSeconds(3);
 
 	/**
 	 * 截图大小，判定截图失败(kb)
 	 */
 	protected Long lowerLimit = 100L;
-
-	/**
-	 * 是否允许重试（页面截图、页面生成pdf）
-	 */
-	private boolean retryable;
-
-	/**
-	 * 重试次数限制
-	 */
-	protected Integer retryLimit = 3;
 
 }

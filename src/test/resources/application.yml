@@ -39,10 +39,11 @@ playwright:
       width: 1920
       height: 1780
   render:
-    load-wait: 1s
-    reloadable: true
-    reload-wait: 1s
+    load-wait: true
+    load-wait-duration: 3s
+    reload-able: true
+    reload-wait: true
+    reload-wait-duration: 2s
     reload-limit: 3
-    retryable: true
     lower-limit: 100
     tmp-dir: D://tmp

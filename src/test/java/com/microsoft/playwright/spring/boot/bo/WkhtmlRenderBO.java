@@ -66,5 +66,5 @@ public class WkhtmlRenderBO implements Serializable {
     /**
      * 是否异步处理每页截图/生成PDF
      */
-    private boolean async;
+    private boolean async = true;
 }
