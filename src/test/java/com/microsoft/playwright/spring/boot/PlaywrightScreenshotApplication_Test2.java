@@ -22,6 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.microsoft.playwright.spring.boot.TestExample.browser;
+
 //@SpringBootApplication
 @Slf4j
 public class PlaywrightScreenshotApplication_Test2 implements CommandLineRunner {
@@ -87,11 +89,10 @@ public class PlaywrightScreenshotApplication_Test2 implements CommandLineRunner 
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             log.info("Capturing screenshot : rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-            Browser browser = null;
+            Page page = null;
             try {
-                browser = browserPagePool.borrowObject();
                 // 从池中获取一个浏览器页面
-                Page page = browser.newPage();
+                page = browserPagePool.borrowObject();
                 //page = browserPagePool.borrowObject();
                 // 设置页面加载参数, 并跳转到url
                 page.navigate(urlTemp.getUrl(), new Page.NavigateOptions()
@@ -130,8 +131,8 @@ public class PlaywrightScreenshotApplication_Test2 implements CommandLineRunner 
             } catch (Exception e) {
                 throw new RuntimeException("Capture screenshot error: {}", e);
             } finally {
-                if (Objects.nonNull(browser)){
-                    browserPagePool.returnObject(browser);
+                if(Objects.nonNull(page)){
+                    browserPagePool.returnObject(page);
                 }
             }
         });
@@ -161,11 +162,10 @@ public class PlaywrightScreenshotApplication_Test2 implements CommandLineRunner 
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             log.info("Generate PDF for url: {}", urlTemp.getUrl());
-            Browser browser = null;
+            Page page = null;
             try {
-                browser = browserPagePool.borrowObject();
                 // 从池中获取一个浏览器页面
-                Page page = browser.newPage();
+                page = browserPagePool.borrowObject();
                 // 设置页面加载参数, 并跳转到url
                 page.navigate(urlTemp.getUrl(), new Page.NavigateOptions()
                         .setTimeout(60 * 1000)
@@ -190,8 +190,8 @@ public class PlaywrightScreenshotApplication_Test2 implements CommandLineRunner 
             } catch (Exception e) {
                 throw new RuntimeException("Generate PDF error: {}", e);
             } finally {
-                if (Objects.nonNull(browser)){
-                    browserPagePool.returnObject(browser);
+                if(Objects.nonNull(page)){
+                    browserPagePool.returnObject(page);
                 }
             }
         });

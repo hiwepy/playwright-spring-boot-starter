@@ -71,7 +71,6 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
     public void run(String... args) throws Exception {
         //List<String> reportUrls = Arrays.asList("https://www.baidu.com", "https://www.baidu.com");
 
-
         Map<String, Object> params = new HashMap<>();
         params.put("report_urls", reportUrls);
         // 2.1、配置 PDF 渲染参数
@@ -84,6 +83,7 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         renderBO.setPageSize("A4");
         renderBO.setParam(Base64Utils.encodeToString(JSON.toJSONString(params).getBytes()));
         renderBO.setRanderId(Objects.toString(sequence.nextId()));
+        renderBO.setType(3);
         WkhtmlRenderResultVO resultBO = null;
         try {
             // 2.2、渲染 PDF

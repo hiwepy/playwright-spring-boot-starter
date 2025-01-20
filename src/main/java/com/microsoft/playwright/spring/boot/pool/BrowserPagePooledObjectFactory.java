@@ -1,10 +1,10 @@
 package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.options.BrowserNewPageOptions;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
@@ -31,7 +31,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public void activateObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
-        log.info("Activate Page Instance '{}'.", page);
+        log.info("Activate Browser Page Instance '{}'.", page);
         if(Objects.nonNull(page)){
             page.bringToFront();
         }
@@ -47,18 +47,18 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     public void destroyObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
         if (Objects.isNull(page)) {
-            log.warn("Destroy Page Instance Error, Page is null.");
+            log.warn("Destroy Browser Page Instance Error, Page is null.");
             return;
         }
         if (page.isClosed()) {
-            log.warn("Destroy Page Instance Error, Page is already closed.");
+            log.warn("Destroy Browser Page Instance Error, Page is already closed.");
             return;
         }
         try {
-            log.info("Destroy Page Instance '{}'.", page);
+            log.info("Destroy Browser Page Instance '{}'.", page);
             page.close();
         } catch (Exception e) {
-            log.error("Destroy Page Instance '{}' Error.", page, e);
+            log.error("Destroy Browser Page Instance '{}' Error.", page, e);
         }
     }
 
@@ -69,14 +69,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public PooledObject<Page> makeObject() throws Exception {
-
-        // Get playwright instance
-        Playwright playwright = PlaywrightUtil.getInstance();
-
-        Browser browser = this.browser;
-        Browser.NewPageOptions launchOptions = playwrightProperties.getNewPageOptions().toOptions();
-        Page page = browser.newPage(launchOptions);
-        log.info("Create Page Instance '{}', Success.", page);
+        // Create Browser Page
+        Page page;
+        if(Objects.nonNull(playwrightProperties.getNewPageOptions())){
+            Browser.NewPageOptions newPageOptions = playwrightProperties.getNewPageOptions().toOptions();
+            page = PlaywrightUtil.getBrowser(playwrightProperties).newPage(newPageOptions);
+        } else {
+            page = PlaywrightUtil.getBrowser(playwrightProperties).newPage();
+        }
+        log.info("Create Browser Page Instance '{}', Success.", page);
         return new DefaultPooledObject<>(page);
     }
 
@@ -89,7 +90,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public void passivateObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
-        log.info("Return Page Instance '{}'.", page);
+        log.info("Return Browser Page Instance '{}'.", page);
     }
 
     /**
@@ -103,18 +104,17 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public boolean validateObject(PooledObject<Page> p) {
         Page page = p.getObject();
-        boolean isBrowserValidated = Objects.nonNull(browser) && browser.isConnected();
-        log.info("Validate Browser : {}, isValidated : {}", browser, isBrowserValidated);
-        boolean isPageValidated = Objects.nonNull(page) && page.isClosed();
-        log.info("Validate Page : {}, isValidated : {}", browser, isPageValidated);
-        return isBrowserValidated && isPageValidated;
+        if(Objects.nonNull(page) ){
+            log.info("Validate Browser Page Instance '{}'.", page);
+            boolean isPageValidated = !page.isClosed() && page.context().browser().isConnected();
+            log.info("Validate Browser Page : {}, isValidated : {}", page, isPageValidated);
+        }
+        return false;
     }
 
     @Override
     public void close() throws Exception {
-        PlaywrightUtil.cleanupBrowser(browser);
-        browser.close();
-        log.info("Destroy Browser Instance Success.");
+        log.info("Destroy Browser Page Instance Success.");
     }
 
 }

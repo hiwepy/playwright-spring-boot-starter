@@ -52,40 +52,33 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
      */
     protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
-
-        // 从池中获取一个浏览器页面
-        Browser browser = null;
+/*
         try {
-            // Get playwright instance
-            Playwright playwright = PlaywrightUtil.getInstance();
-            // create browser instance with playwright
-            browser = PlaywrightUtil.getBrowserType(playwright, browserType)
-                    .launch(launchOptions);
             // 1、使用CompletableFuture异步处理
-            List<CompletableFuture<BufferTemp>> futureList = new ArrayList<>();
-            for (BufferTemp urlTemp : renderBO.getUrls()) {
-                futureList.add(captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
+
+            try(Browser browser = PlaywrightUtil.getBrowser(playwrightProperties)) {
+                List<CompletableFuture<BufferTemp>> futureList = new ArrayList<>();
+                for (BufferTemp urlTemp : renderBO.getUrls()) {
+                    futureList.add(captureScreenshotFuture(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
+                }
+                // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
+                //CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
+                return renderBO.getUrls().stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
             }
-            // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-            CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
-            return renderBO.getUrls().stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
+
+
         } catch (Exception e) {
             throw new TaskRuntimeException("Failed to create browser instance: " + e.getMessage());
-        } finally {
-            if(Objects.nonNull(browser)){
-                browserPagePool.returnObject(browser);
-            }
-        }
-        /*
+        }*/
         // 1、使用CompletableFuture异步处理
         List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
-                .map(urlTemp -> captureScreenshotFuture(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
+                .map(urlTemp -> captureScreenshotFuture1(null, renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
                 .collect(Collectors.toList());
         // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
         CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
         CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                 .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
-        return resultFuture.join();*/
+        return resultFuture.join();
     }
 
     @Override

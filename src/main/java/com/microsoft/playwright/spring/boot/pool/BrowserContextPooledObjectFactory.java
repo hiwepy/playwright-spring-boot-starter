@@ -5,6 +5,7 @@ import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -16,16 +17,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, AutoCloseable {
 
+    private static final String USER_DATA_DIR_PREFIX = "browser-context-%s";
     private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
     private final PlaywrightProperties playwrightProperties;
-    private AtomicInteger atomicInteger = new AtomicInteger(0);
+    private final AtomicInteger atomicInteger = new AtomicInteger(0);
 
     public BrowserContextPooledObjectFactory(PlaywrightProperties playwrightProperties) {
         this.playwrightProperties = playwrightProperties;
@@ -99,7 +100,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
-
         // Browser Type
         PlaywrightProperties.BrowserType browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserType.chromium;
         // Get playwright instance
@@ -115,18 +115,14 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             } else {
                 userDataRootDir = System.getProperty("java.io.tmpdir");
             }
-            browser-context-1
-            atomicInteger.get()
-
-            File userDataDir = new File(userDataRootDir, UUID.randomUUID().toString());
+            File userDataDir = new File(userDataRootDir,  String.format(USER_DATA_DIR_PREFIX, atomicInteger.get()));
             if(!userDataDir.exists()){
-                userDataDir.mkdirs();
+                FileUtils.forceMkdir(userDataDir);
             }
-            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType)
-                    .launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
+            // Get Browser Context
+            browserContext = PlaywrightUtil.getBrowserType(playwright, browserType).launchPersistentContext(userDataDir.toPath() , launchPersistentOptions);
             USER_DATA_DIR_MAP.put(browserContext, userDataDir);
             log.info("Create Persistent BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
-
         } else {
             // Get Browser Launch Options
             BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
@@ -170,12 +166,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
         BrowserContext browserContext = p.getObject();
-        boolean isValidated;
-        if (Objects.nonNull(launchOptions)) {
-            isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
-        } else {
-            isValidated = Objects.nonNull(browserContext);
-        }
+        boolean isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();;
         log.info("Validate BrowserContext : {}, isValidated : {}", browserContext, isValidated);
         return isValidated;
     }

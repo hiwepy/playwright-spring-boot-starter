@@ -64,4 +64,5 @@ public class WkhtmlRenderBO implements Serializable {
      */
     private String pageSize;
 
+    private Integer type;
 }

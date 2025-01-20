@@ -14,6 +14,7 @@ import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
 import com.microsoft.playwright.spring.boot.util.TimeUtil;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
 import hitool.core.lang3.StringUtils;
 import hitool.core.lang3.time.DateFormats;
@@ -179,44 +180,116 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @param selector 选择器
      * @return
      */
-    protected CompletableFuture<BufferTemp> captureScreenshotFuture(Browser browser, String rendeId, BufferTemp urlTemp, String selector){
+    protected CompletableFuture<BufferTemp> captureScreenshotFuture1(Browser browser, String rendeId, BufferTemp urlTemp, String selector){
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
         //HttpServletRequest request = WebUtils.getHttpServletRequest();
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
-
-            //BrowserContext browserContext = null;
-            try {
-               /* if( playwrightRenderProperties.isIsolated()){
-                    browserContext = browserContextPool.borrowObject();
-                    //BrowserUtil.copyCookies(request, browserContext);
-                } else {
-
+            // Page page = null;
+            try (Page page = browser.newPage()) {
+                //page = browserPagePool.borrowObject();
+                // 跳转到url
+                log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
+                log.info("Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
+                // 如果许重新截图，则重试截图
+                // AtomicInteger screenshotRetry = new AtomicInteger(0);
+                // 如果截图文件大小小于指定大小，则重试截图
+                /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
+                    log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                    pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
+                    log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
                 }*/
-                Browser.NewPageOptions options = playwrightProperties.getNewPageOptions().toOptions();
-                try( Page page = browser.newPage(options)) {
-                    // 跳转到url
-                    log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-                    BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
-                    log.info("Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                    // 如果许重新截图，则重试截图
-                    // AtomicInteger screenshotRetry = new AtomicInteger(0);
-                    // 如果截图文件大小小于指定大小，则重试截图
-                    /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
-                        log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-                        pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
-                        log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                    }*/
-                    return pageScreenshot;
-                } catch (Exception e) {
-                    log.error("Capture screenshot error: ", e);
-                    throw new PlaywrightException("Capture screenshot error", e);
-                }
+                return pageScreenshot;
             } catch (Exception e) {
-                log.error("Browser Context error: ", e);
-                throw new PlaywrightException("Browser Context error", e);
+                log.error("Capture screenshot error: ", e);
+                throw new PlaywrightException("Capture screenshot error", e);
+            } /*finally {
+                if(Objects.nonNull(page)){
+                    browserPagePool.returnObject(page);
+                }
+            }*/
+        }, dtpToImageExecutor);
+    }
+
+    /**
+     * 定义一个浏览器页面截图方法
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return
+     */
+    protected CompletableFuture<BufferTemp> captureScreenshotFuture2( BrowserContext browserContext, String rendeId, BufferTemp urlTemp, String selector){
+        if(StringUtils.isBlank(urlTemp.getUrl())){
+            return CompletableFuture.completedFuture(urlTemp);
+        }
+        //HttpServletRequest request = WebUtils.getHttpServletRequest();
+        // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
+        return CompletableFuture.supplyAsync(() -> {
+            // Page page = null;
+            try {
+                Page page = browserContext.newPage();
+                // 跳转到url
+                log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
+                log.info("Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
+                // 如果许重新截图，则重试截图
+                // AtomicInteger screenshotRetry = new AtomicInteger(0);
+                // 如果截图文件大小小于指定大小，则重试截图
+                /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
+                    log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                    pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
+                    log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
+                }*/
+                return pageScreenshot;
+            } catch (Exception e) {
+                log.error("Capture screenshot error: ", e);
+                throw new PlaywrightException("Capture screenshot error", e);
+            }
+        }, dtpToImageExecutor);
+    }
+
+    /**
+     * 定义一个浏览器页面截图方法
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return
+     */
+    protected CompletableFuture<BufferTemp> captureScreenshotFuture3(String rendeId, BufferTemp urlTemp, String selector){
+        if(StringUtils.isBlank(urlTemp.getUrl())){
+            return CompletableFuture.completedFuture(urlTemp);
+        }
+        //HttpServletRequest request = WebUtils.getHttpServletRequest();
+        // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
+        return CompletableFuture.supplyAsync(() -> {
+            // Page page = null;
+            BrowserContext browserContext = null;
+            try {
+                browserContext = browserContextPool.borrowObject();
+                Page page = browserContext.newPage();
+                // 跳转到url
+                log.info("Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
+                log.info("Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
+                // 如果许重新截图，则重试截图
+                // AtomicInteger screenshotRetry = new AtomicInteger(0);
+                // 如果截图文件大小小于指定大小，则重试截图
+                /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
+                    log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
+                    pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
+                    log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
+                }*/
+                return pageScreenshot;
+            } catch (Exception e) {
+                log.error("Capture screenshot error: ", e);
+                throw new PlaywrightException("Capture screenshot error", e);
+            } finally {
+                if(Objects.nonNull(browserContext)){
+                    browserContextPool.returnObject(browserContext);
+                }
             }
         }, dtpToImageExecutor);
     }
@@ -438,16 +511,10 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             // 从池中获取一个浏览器页面
-            Browser browser = null;
-            BrowserContext browserContext = null;
+            Page page = null;
             try {
-                if( playwrightRenderProperties.isIsolated()){
-                    browserContext = browserContextPool.borrowObject();
-                    //BrowserUtil.copyCookies(request, browserContext);
-                } else {
-                    browser = browserPagePool.borrowObject();
-                }
-                try( Page page = Objects.nonNull(browser) ? browser.newPage() : browserContext.newPage()) {
+                page = browserPagePool.borrowObject();
+                try{
                     log.info("Generate pdf start for rendeId: {}, url : {}", rendeId, urlTemp.getUrl());
                     BufferTemp pageToPdf = this.loadPageWithCallback(page, urlTemp, this.doPageToPdf(rendeId));
                     log.info("Generate pdf completed for rendeId: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, urlTemp.getUrl(), pageToPdf.getName(), pageToPdf.getFileSize()/ONE_KB);
@@ -471,11 +538,8 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 log.error("Browser Context error: ", e);
                 throw new PlaywrightException("Browser Context error", e);
             } finally {
-                if(Objects.nonNull(browser)){
-                    browserPagePool.returnObject(browser);
-                }
-                if(Objects.nonNull(browserContext)){
-                    browserContextPool.returnObject(browserContext);
+                if(Objects.nonNull(page)){
+                    browserPagePool.returnObject(page);
                 }
             }
         }, dtpToPdfExecutor);

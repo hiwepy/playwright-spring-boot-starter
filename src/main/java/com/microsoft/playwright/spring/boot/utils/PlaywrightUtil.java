@@ -66,6 +66,18 @@ public class PlaywrightUtil {
         return browser;
     }
 
+    public static Browser getBrowser(PlaywrightProperties playwrightProperties) {
+        // Browser Type
+        PlaywrightProperties.BrowserType browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserType.chromium;
+        // Get playwright instance
+        Playwright playwright = getInstance();
+        // Get Browser Launch Options
+        BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
+        // Get Browser
+        return getBrowser(playwright, browserType, launchOptions);
+    }
+
+
     public static void cleanupBrowser(Browser browser) {
         if (Objects.isNull(browser)) {
             return;
