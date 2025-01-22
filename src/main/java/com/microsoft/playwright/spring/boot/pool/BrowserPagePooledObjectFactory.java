@@ -5,7 +5,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -74,7 +74,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         // Get Browser Launch Options
         BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
         // Get Browser
-        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
+        Browser browser = PlaywrightUtils.getBrowser(playwright, browserType, launchOptions);
         // Create Browser Page
         Page page;
         if(Objects.nonNull(playwrightProperties.getNewPageOptions())){

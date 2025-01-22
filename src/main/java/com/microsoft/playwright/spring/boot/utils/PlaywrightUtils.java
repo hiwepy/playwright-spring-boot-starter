@@ -2,9 +2,11 @@ package com.microsoft.playwright.spring.boot.utils;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.MouseButton;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -16,19 +18,31 @@ import java.util.stream.Collectors;
 /**
  */
 @Slf4j
-public class PlaywrightUtil {
+public class PlaywrightUtils {
 
     private static final String TOKEN_SPLITTER = ";";
     private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
+    private static final Object lock = new Object();
 
     public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserType, BrowserType.LaunchOptions launchOptions) {
-        BrowserType browserTypeObj = browserType.getBrowserType(playwright);
-        /*Browser browser = BROWSER_CACHE_MAP.get(browserType);
-        if (Objects.nonNull(browser) && !browser.isConnected()) {
-            return browser;
-        }*/
-        Browser browser = browserTypeObj.launch(launchOptions);
-        //BROWSER_CACHE_MAP.put(browserType, browser);
+        Browser browser = BROWSER_CACHE_MAP.get(browserType);
+        if (Objects.nonNull(browser)) {
+            if (browser.isConnected()) {
+                return browser;
+            } else {
+                // 如果浏览器已断开连接，从缓存中移除
+                BROWSER_CACHE_MAP.remove(browserType);
+            }
+        }
+        // 使用双重检查锁定模式创建浏览器实例
+        synchronized (lock) {
+            browser = BROWSER_CACHE_MAP.get(browserType);
+            if (Objects.isNull(browser) || !browser.isConnected()) {
+                BrowserType browserTypeObj = browserType.getBrowserType(playwright);
+                browser = browserTypeObj.launch(launchOptions);
+                BROWSER_CACHE_MAP.put(browserType, browser);
+            }
+        }
         return browser;
     }
 
@@ -48,7 +62,7 @@ public class PlaywrightUtil {
         browser.contexts().forEach(context -> {
             List<Page> pages = context.pages();
             if (Objects.nonNull(pages) && !pages.isEmpty()) {
-                pages.forEach(PlaywrightUtil::closePage);
+                pages.forEach(PlaywrightUtils::closePage);
             }
             context.clearCookies();
         });
@@ -109,6 +123,19 @@ public class PlaywrightUtil {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
+    }
+
+    public static void waitForPageLoad(Page page) {
+        page.waitForLoadState(LoadState.LOAD);
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
+
+    public static byte[] takeScreenshot(Page page, String selector) {
+        if (StringUtils.hasText(selector)) {
+            return page.locator(selector).screenshot();
+        }
+        return page.screenshot();
     }
 
     public static void closePage(Page page) {

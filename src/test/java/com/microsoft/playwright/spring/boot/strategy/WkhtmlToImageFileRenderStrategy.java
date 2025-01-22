@@ -7,7 +7,7 @@ import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
 import com.microsoft.playwright.spring.boot.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -62,7 +62,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
             return resultFuture.join();
         } else {
             try( Playwright playwright = Playwright.create();
-                 Browser browser = PlaywrightUtil.getBrowser(playwright, playwrightProperties)) {
+                 Browser browser = PlaywrightUtils.getBrowser(playwright, playwrightProperties)) {
                 List<BufferTemp> futureList = new ArrayList<>();
                 for (BufferTemp urlTemp : renderBO.getUrls()) {
                     futureList.add(captureScreenshotSync(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));

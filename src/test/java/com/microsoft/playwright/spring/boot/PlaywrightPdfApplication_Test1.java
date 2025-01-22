@@ -77,7 +77,7 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         WkhtmlRenderBO renderBO = new WkhtmlRenderBO();
         //renderBO.setSchoolCode(schoolCode);
         //renderBO.setUserId(userId);
-        renderBO.setSelector(".growthMain");
+        //renderBO.setSelector(".growthMain");
         renderBO.setQuality(100);
         renderBO.setCompress(false);
         renderBO.setPageSize("A4");

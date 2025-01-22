@@ -2,7 +2,7 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.pool2.PooledObject;
@@ -84,7 +84,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         // Get Browser Launch Options
         BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
         // Get Browser
-        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
+        Browser browser = PlaywrightUtils.getBrowser(playwright, browserType, launchOptions);
         // Get Browser New Context Options
         Browser.NewContextOptions newContextOptions = Objects.nonNull(playwrightProperties.getNewContextOptions()) ? playwrightProperties.getNewContextOptions().toOptions() : new Browser.NewContextOptions().setScreenSize(1920, 1080);
         // Create Browser Context
@@ -106,7 +106,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Return BrowserContext Instance '{}'.", browserContext);
         if(Objects.nonNull(browserContext)){
             browserContext.clearCookies();
-            browserContext.pages().forEach(PlaywrightUtil::closePage);
+            browserContext.pages().forEach(PlaywrightUtils::closePage);
             log.info("Return BrowserContext Instance : clear cookies success");
         }
     }
