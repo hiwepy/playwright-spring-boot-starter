@@ -1,5 +1,6 @@
 package com.microsoft.playwright.spring.boot.utils;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.MouseButton;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -20,15 +22,48 @@ public class PlaywrightUtil {
 
     private static final String TOKEN_SPLITTER = ";";
     private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
+    private static final Object lock = new Object();
+
+    private static ThreadLocal<Browser> ttl2 = new TransmittableThreadLocal<Browser>();
+    private static ThreadLocal<Playwright> ttl = new TransmittableThreadLocal<>();
+    private static Playwright playwright;
+
+    public static synchronized Playwright getInstance() {
+        if(Objects.isNull(playwright)){
+            log.info("Create Playwright Instance .");
+            playwright = Playwright.create();
+            log.info("Playwright instance created.");
+        }
+        return playwright;
+    }
+
+    public static synchronized void close(Function<Playwright, ?> function) {
+        if(Objects.nonNull(playwright)){
+            playwright.close();
+            playwright = null;
+            log.info("Playwright instance closed.");
+        }
+    }
 
     public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserType, BrowserType.LaunchOptions launchOptions) {
-        BrowserType browserTypeObj = browserType.getBrowserType(playwright);
-        /*Browser browser = BROWSER_CACHE_MAP.get(browserType);
-        if (Objects.nonNull(browser) && !browser.isConnected()) {
-            return browser;
-        }*/
-        Browser browser = browserTypeObj.launch(launchOptions);
-        //BROWSER_CACHE_MAP.put(browserType, browser);
+        Browser browser = BROWSER_CACHE_MAP.get(browserType);
+        if (Objects.nonNull(browser)) {
+            if (browser.isConnected()) {
+                return browser;
+            } else {
+                // 如果浏览器已断开连接，从缓存中移除
+                BROWSER_CACHE_MAP.remove(browserType);
+            }
+        }
+        // 使用双重检查锁定模式创建浏览器实例
+        synchronized (lock) {
+            browser = BROWSER_CACHE_MAP.get(browserType);
+            if (Objects.isNull(browser) || !browser.isConnected()) {
+                BrowserType browserTypeObj = browserType.getBrowserType(playwright);
+                browser = browserTypeObj.launch(launchOptions);
+                BROWSER_CACHE_MAP.put(browserType, browser);
+            }
+        }
         return browser;
     }
 
