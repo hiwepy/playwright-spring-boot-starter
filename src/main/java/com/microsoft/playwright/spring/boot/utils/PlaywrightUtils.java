@@ -1,28 +1,49 @@
 package com.microsoft.playwright.spring.boot.utils;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
-import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.MouseButton;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  */
 @Slf4j
-public class PlaywrightUtils {
+public class PlaywrightUtil {
 
     private static final String TOKEN_SPLITTER = ";";
     private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
     private static final Object lock = new Object();
+
+    private static ThreadLocal<Browser> ttl2 = new TransmittableThreadLocal<Browser>();
+    private static ThreadLocal<Playwright> ttl = new TransmittableThreadLocal<>();
+    private static Playwright playwright;
+
+    public static synchronized Playwright getInstance() {
+        if(Objects.isNull(playwright)){
+            log.info("Create Playwright Instance .");
+            playwright = Playwright.create();
+            log.info("Playwright instance created.");
+        }
+        return playwright;
+    }
+
+    public static synchronized void close(Function<Playwright, ?> function) {
+        if(Objects.nonNull(playwright)){
+            playwright.close();
+            playwright = null;
+            log.info("Playwright instance closed.");
+        }
+    }
 
     public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserType, BrowserType.LaunchOptions launchOptions) {
         Browser browser = BROWSER_CACHE_MAP.get(browserType);
@@ -62,7 +83,7 @@ public class PlaywrightUtils {
         browser.contexts().forEach(context -> {
             List<Page> pages = context.pages();
             if (Objects.nonNull(pages) && !pages.isEmpty()) {
-                pages.forEach(PlaywrightUtils::closePage);
+                pages.forEach(PlaywrightUtil::closePage);
             }
             context.clearCookies();
         });
@@ -123,19 +144,6 @@ public class PlaywrightUtils {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
-    }
-
-    public static void waitForPageLoad(Page page) {
-        page.waitForLoadState(LoadState.LOAD);
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-    }
-
-    public static byte[] takeScreenshot(Page page, String selector) {
-        if (StringUtils.hasText(selector)) {
-            return page.locator(selector).screenshot();
-        }
-        return page.screenshot();
     }
 
     public static void closePage(Page page) {
