@@ -1,7 +1,6 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.alibaba.fastjson2.JSON;
-import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
 import com.microsoft.playwright.spring.boot.strategy.PlaywrightRenderStrategyRouter;
@@ -22,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @EnableConfigurationProperties(PlaywrightRenderProperties.class)
 @SpringBootApplication

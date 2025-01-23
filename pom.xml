@@ -44,16 +44,18 @@
 	</developers>
 
 	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<name>Maven Snapshots Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
 		<repository>
-			<id>ossrh</id>
-			<name>Maven Central Staging Repository</name>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+			<!--必须与 settings.xml 的 id 一致-->
+			<id>aiban-tianyin-core</id>
+			<name>core</name>
+			<url>https://aiban-maven.pkg.coding.net/repository/tianyin/core/</url>
 		</repository>
+		<!--        <snapshotRepository>-->
+		<!--            <id>nexus-snapshots</id>-->
+		<!--            <name>Nexus Snapshot Repository</name>-->
+		<!--            <url>https://nexus.hiwepy.com/repository/maven-snapshots/</url>-->
+		<!--   <uniqueVersion>true</uniqueVersion>-->
+		<!--        </snapshotRepository>-->
 	</distributionManagement>
 
 	<build>
@@ -365,7 +367,7 @@
 		<commons-io.version>2.16.1</commons-io.version>
 		<fastjson2.version>2.0.53</fastjson2.version>
 		<guava.version>33.2.1-jre</guava.version>
-		<pdfbox.version>3.0.2</pdfbox.version>
+		<pdfbox.version>3.0.3</pdfbox.version>
 		<playwright.version>1.48.0</playwright.version>
 		<spring-biz.version>1.1.5.RELEASE</spring-biz.version>
 		<transmittable-thread-local.version>2.14.2</transmittable-thread-local.version>

@@ -1,6 +1,5 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
 import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;

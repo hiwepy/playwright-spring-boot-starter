@@ -10,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -22,9 +20,6 @@ import java.util.stream.Collectors;
 public class PlaywrightUtil {
 
     private static final String TOKEN_SPLITTER = ";";
-    private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
-    private static final Object lock = new Object();
-
     private static ThreadLocal<Browser> browserInstance = new TransmittableThreadLocal<Browser>();
     private static ThreadLocal<Playwright> playwrightInstance = new TransmittableThreadLocal<>();
 

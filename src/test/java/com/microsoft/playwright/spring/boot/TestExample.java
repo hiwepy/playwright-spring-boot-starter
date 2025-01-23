@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,7 +21,7 @@ public class TestExample {
 
     @BeforeAll
     static void launchBrowser() {
-        playwright = Playwright.create();
+        playwright = PlaywrightUtil.getInstance();
         browser = playwright.chromium().launch();
     }
 

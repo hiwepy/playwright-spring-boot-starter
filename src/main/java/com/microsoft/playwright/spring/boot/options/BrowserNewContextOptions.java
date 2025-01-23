@@ -2,7 +2,6 @@ package com.microsoft.playwright.spring.boot.options;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.*;
 import lombok.Data;

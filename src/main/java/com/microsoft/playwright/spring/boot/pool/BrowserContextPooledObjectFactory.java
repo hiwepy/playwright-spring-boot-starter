@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     /**
      * Playwright管理容器
      */
-    //private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
+    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
     private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
     private final PlaywrightProperties playwrightProperties;
 
@@ -59,14 +60,39 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         // Cleanup browser context
         cleanupBrowserContext(browserContext);
-        browserContext.close();
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
-       /* Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
-        if (Objects.nonNull(playwright)) {
+        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+        if (playwright != null) {
             playwright.close();
             log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
-        log.info("Destroy BrowserContext Instance '{}'.", browserContext);*/
+    }
+
+    public void cleanupBrowserContext(BrowserContext browserContext) {
+        if (Objects.isNull(browserContext)) {
+            return;
+        }
+        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
+        browserContext.clearCookies();
+        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
+        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
+            log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
+            try {
+                FileUtils.deleteDirectory(userDataDir);
+                log.info("Deleted user data directory: {}", userDataDir);
+            } catch (IOException e) {
+                log.error("Failed to delete user data directory: {}", userDataDir, e);
+            }
+        }
+        List<Page> pages = browserContext.pages();
+        if (!CollectionUtils.isEmpty(pages)) {
+            for (Page page : pages) {
+                if (page.isClosed()) {
+                    continue;
+                }
+                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
+            }
+        }
     }
 
     /**
@@ -76,7 +102,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
      */
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
-        // Get playwright instance (需要每次创建新的实例，否则会报错)
         Playwright playwright = PlaywrightUtil.getInstance();
         log.info("Create Playwright Instance '{}' Success.", playwright);
         // Browser Type
@@ -90,7 +115,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         // Create Browser Context
         BrowserContext browserContext = browser.newContext(newContextOptions);
         log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
-        //PLAYWRIGHT_MAP.put(browserContext, playwright);
+        PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -122,50 +147,22 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public boolean validateObject(PooledObject<BrowserContext> p) {
         BrowserContext browserContext = p.getObject();
-        boolean isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();;
+        boolean isValidated = Objects.nonNull(browserContext) && browserContext.browser().isConnected();
         log.info("Validate BrowserContext : {}, isValidated : {}", browserContext, isValidated);
         return isValidated;
     }
 
     @Override
     public void close() throws Exception {
-        /*PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
+        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
             // Cleanup browser context
             cleanupBrowserContext(browserContext);
-            browserContext.close();
-            if (Objects.nonNull(playwright)) {
+            if (playwright != null) {
                 playwright.close();
                 log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
             }
-        });*/
-        log.info("Destroy BrowserContext of Playwright Instance Success.");
-    }
+        });
 
-    public void cleanupBrowserContext(BrowserContext browserContext) {
-        if (Objects.isNull(browserContext)) {
-            return;
-        }
-        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
-        browserContext.clearCookies();
-        File userDataDir = USER_DATA_DIR_MAP.remove(browserContext);
-        if (Objects.nonNull(userDataDir) && userDataDir.exists()) {
-            log.info("Cleanup BrowserContext user data directory '{}'.", userDataDir);
-            try {
-                FileUtils.deleteDirectory(userDataDir);
-                log.info("Deleted user data directory: {}", userDataDir);
-            } catch (IOException e) {
-                log.error("Failed to delete user data directory: {}", userDataDir, e);
-            }
-        }
-        List<Page> pages = browserContext.pages();
-        if (!pages.isEmpty()) {
-            for (Page page : pages) {
-                if (page.isClosed()) {
-                    continue;
-                }
-                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
-            }
-        }
     }
 
 }

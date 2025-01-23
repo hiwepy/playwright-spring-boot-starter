@@ -1,8 +1,6 @@
 package com.microsoft.playwright.spring.boot.options;
 
 import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.*;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -12,8 +10,6 @@ import org.springframework.util.CollectionUtils;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 @Accessors(chain = true)
 @Data
