@@ -5,7 +5,7 @@ import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
 import com.microsoft.playwright.spring.boot.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
 import com.microsoft.playwright.spring.boot.util.PdfUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -57,8 +57,8 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
                     .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
             return resultFuture.join();
         } else {
-            try(Playwright playwright = Playwright.create();
-                Browser browser = PlaywrightUtils.getBrowser(playwright, playwrightProperties)) {
+            Playwright playwright = PlaywrightUtil.getInstance();
+            try(Browser browser = PlaywrightUtil.getBrowser(playwright, playwrightProperties)) {
                 List<BufferTemp> tempRtList = new ArrayList<>();
                 for (BufferTemp urlTemp : renderBO.getUrls()) {
                     tempRtList.add(pageToPdfFutureSync(browser, renderBO.getRanderId(), urlTemp));

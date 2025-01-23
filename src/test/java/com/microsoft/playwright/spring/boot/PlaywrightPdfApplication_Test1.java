@@ -1,6 +1,7 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.alibaba.fastjson2.JSON;
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.RenderType;
 import com.microsoft.playwright.spring.boot.strategy.PlaywrightRenderStrategyRouter;
@@ -17,9 +18,11 @@ import org.springframework.util.Base64Utils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @EnableConfigurationProperties(PlaywrightRenderProperties.class)
 @SpringBootApplication
@@ -82,12 +85,26 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         renderBO.setCompress(false);
         renderBO.setPageSize("A4");
         renderBO.setParam(Base64Utils.encodeToString(JSON.toJSONString(params).getBytes()));
-        renderBO.setRanderId(Objects.toString(sequence.nextId()));
         renderBO.setAsync(true);
         WkhtmlRenderResultVO resultBO = null;
         try {
             // 2.2、渲染 PDF
-            resultBO = renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+            CompletableFuture.allOf(CompletableFuture.runAsync(() -> {
+                try {
+                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
+                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }),CompletableFuture.runAsync(() -> {
+                try {
+                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
+                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            })).join();
+            //resultBO = renderStrategyRouter.route(RenderType.TO_PDF_BUFFER).render(renderBO);
 
         } catch (Exception e) {
             log.error("pdf生成失败;", e);

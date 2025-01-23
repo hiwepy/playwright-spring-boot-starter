@@ -14,7 +14,7 @@ import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
 import com.microsoft.playwright.spring.boot.util.TimeUtil;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
 import hitool.core.lang3.StringUtils;
 import hitool.core.lang3.time.DateFormats;
@@ -350,7 +350,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         // 设置页面加载参数, 并跳转到url
         Page.NavigateOptions navigateOptions = playwrightProperties.getPageNavigateOptions().toOptions();
         page.navigate(urlTemp.getUrl(), navigateOptions);
-        PlaywrightUtils.waitForPageLoad(page);
+        PlaywrightUtil.waitForPageLoad(page);
         // 如果设置了加载等待时间，则等待一段时间
         if(playwrightRenderProperties.isLoadWait() && Objects.nonNull(playwrightRenderProperties.getLoadWaitDuration()) && playwrightRenderProperties.getLoadWaitDuration().toMillis() > 0){
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
@@ -389,7 +389,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                     .setTimeout(urlTemp.getReloadTimeout())
                     .setWaitUntil(playwrightProperties.getPageNavigateOptions().getWaitUntil());
             page.reload(reloadOptions);
-            PlaywrightUtils.waitForPageLoad(page);
+            PlaywrightUtil.waitForPageLoad(page);
             // 设置重新加载状态为false
             urlTemp.setReload(false);
             // 如果是重试，则等待一段时间

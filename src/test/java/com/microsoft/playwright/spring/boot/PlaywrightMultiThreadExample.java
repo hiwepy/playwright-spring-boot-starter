@@ -3,6 +3,7 @@ package com.microsoft.playwright.spring.boot;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 public class PlaywrightMultiThreadExample {
 
     public static void main(String[] args) {
-        try (Playwright playwright = Playwright.create()) {
+        try (Playwright playwright = PlaywrightUtil.getInstance()) {
             Browser browser = playwright.chromium().launch();
             List<String> urls = Arrays.asList("https://example.com", "https://example.org", "https://example.net");
 

@@ -2,7 +2,7 @@ package com.microsoft.playwright.spring.boot.pool;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.pool2.PooledObject;
@@ -22,7 +22,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     /**
      * Playwright管理容器
      */
-    private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
+    //private static final Map<BrowserContext, Playwright> PLAYWRIGHT_MAP = new ConcurrentHashMap<>();
     private static final Map<BrowserContext, File> USER_DATA_DIR_MAP = new ConcurrentHashMap<>();
     private final PlaywrightProperties playwrightProperties;
 
@@ -61,12 +61,12 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         cleanupBrowserContext(browserContext);
         browserContext.close();
         log.info("Destroy BrowserContext Instance '{}'.", browserContext);
-        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+       /* Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
         if (Objects.nonNull(playwright)) {
             playwright.close();
             log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
         }
-        log.info("Destroy BrowserContext Instance '{}'.", browserContext);
+        log.info("Destroy BrowserContext Instance '{}'.", browserContext);*/
     }
 
     /**
@@ -77,20 +77,20 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     @Override
     public PooledObject<BrowserContext> makeObject() throws Exception {
         // Get playwright instance (需要每次创建新的实例，否则会报错)
-        Playwright playwright = Playwright.create();
+        Playwright playwright = PlaywrightUtil.getInstance();
         log.info("Create Playwright Instance '{}' Success.", playwright);
         // Browser Type
         PlaywrightProperties.BrowserTypeEnum browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserTypeEnum.chromium;
         // Get Browser Launch Options
         BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
         // Get Browser
-        Browser browser = PlaywrightUtils.getBrowser(playwright, browserType, launchOptions);
+        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
         // Get Browser New Context Options
         Browser.NewContextOptions newContextOptions = Objects.nonNull(playwrightProperties.getNewContextOptions()) ? playwrightProperties.getNewContextOptions().toOptions() : new Browser.NewContextOptions().setScreenSize(1920, 1080);
         // Create Browser Context
         BrowserContext browserContext = browser.newContext(newContextOptions);
         log.info("Create BrowserContext Instance '{}', browserType : {} , Success.", browserContext, browserType);
-        PLAYWRIGHT_MAP.put(browserContext, playwright);
+        //PLAYWRIGHT_MAP.put(browserContext, playwright);
         return new DefaultPooledObject<>(browserContext);
     }
 
@@ -106,7 +106,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Return BrowserContext Instance '{}'.", browserContext);
         if(Objects.nonNull(browserContext)){
             browserContext.clearCookies();
-            browserContext.pages().forEach(PlaywrightUtils::closePage);
+            browserContext.pages().forEach(PlaywrightUtil::closePage);
             log.info("Return BrowserContext Instance : clear cookies success");
         }
     }
@@ -129,7 +129,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
     @Override
     public void close() throws Exception {
-        PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
+        /*PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
             // Cleanup browser context
             cleanupBrowserContext(browserContext);
             browserContext.close();
@@ -137,7 +137,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                 playwright.close();
                 log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
             }
-        });
+        });*/
         log.info("Destroy BrowserContext of Playwright Instance Success.");
     }
 

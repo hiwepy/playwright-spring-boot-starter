@@ -3,16 +3,17 @@ package com.microsoft.playwright.spring.boot.utils;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.Cookie;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.MouseButton;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -24,46 +25,30 @@ public class PlaywrightUtil {
     private static final Map<PlaywrightProperties.BrowserTypeEnum, Browser> BROWSER_CACHE_MAP = new ConcurrentHashMap<>();
     private static final Object lock = new Object();
 
-    private static ThreadLocal<Browser> ttl2 = new TransmittableThreadLocal<Browser>();
-    private static ThreadLocal<Playwright> ttl = new TransmittableThreadLocal<>();
-    private static Playwright playwright;
+    private static ThreadLocal<Browser> browserInstance = new TransmittableThreadLocal<Browser>();
+    private static ThreadLocal<Playwright> playwrightInstance = new TransmittableThreadLocal<>();
 
     public static synchronized Playwright getInstance() {
+        Playwright playwright = playwrightInstance.get();
         if(Objects.isNull(playwright)){
             log.info("Create Playwright Instance .");
             playwright = Playwright.create();
+            playwrightInstance.set(playwright);
             log.info("Playwright instance created.");
         }
         return playwright;
     }
 
-    public static synchronized void close(Function<Playwright, ?> function) {
-        if(Objects.nonNull(playwright)){
-            playwright.close();
-            playwright = null;
-            log.info("Playwright instance closed.");
+    public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserTypeEnum, BrowserType.LaunchOptions launchOptions) {
+        log.info("Get Browser Instance .");
+        Browser browser = browserInstance.get();
+        if (Objects.nonNull(browser) && !browser.isConnected()) {
+            return browser;
         }
-    }
-
-    public static Browser getBrowser(Playwright playwright, PlaywrightProperties.BrowserTypeEnum browserType, BrowserType.LaunchOptions launchOptions) {
-        Browser browser = BROWSER_CACHE_MAP.get(browserType);
-        if (Objects.nonNull(browser)) {
-            if (browser.isConnected()) {
-                return browser;
-            } else {
-                // 如果浏览器已断开连接，从缓存中移除
-                BROWSER_CACHE_MAP.remove(browserType);
-            }
-        }
-        // 使用双重检查锁定模式创建浏览器实例
-        synchronized (lock) {
-            browser = BROWSER_CACHE_MAP.get(browserType);
-            if (Objects.isNull(browser) || !browser.isConnected()) {
-                BrowserType browserTypeObj = browserType.getBrowserType(playwright);
-                browser = browserTypeObj.launch(launchOptions);
-                BROWSER_CACHE_MAP.put(browserType, browser);
-            }
-        }
+        BrowserType browserType = browserTypeEnum.getBrowserType(playwright);
+        browser = browserType.launch(launchOptions);
+        log.info("Create Browser Instance .");
+        browserInstance.set(browser);
         return browser;
     }
 
@@ -144,6 +129,18 @@ public class PlaywrightUtil {
         mouse.down(new Mouse.DownOptions().setButton(MouseButton.LEFT));
         mouse.move(elementHandle.boundingBox().x + slideLength, elementHandle.boundingBox().y, new Mouse.MoveOptions().setSteps(steps));
         mouse.up();
+    }
+    public static void waitForPageLoad(Page page) {
+        page.waitForLoadState(LoadState.LOAD);
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
+
+    public static byte[] takeScreenshot(Page page, String selector) {
+        if (StringUtils.hasText(selector)) {
+            return page.locator(selector).screenshot();
+        }
+        return page.screenshot();
     }
 
     public static void closePage(Page page) {

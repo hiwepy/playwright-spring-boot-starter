@@ -5,7 +5,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtils;
+import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -66,15 +66,15 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
      */
     @Override
     public PooledObject<Page> makeObject() throws Exception {
-        // Get playwright instance (需要每次创建新的实例，否则会报错)
-        Playwright playwright = Playwright.create();
+        // Get playwright instance
+        Playwright playwright = PlaywrightUtil.getInstance();
         log.info("Create Playwright Instance '{}' Success.", playwright);
         // Browser Type
         PlaywrightProperties.BrowserTypeEnum browserType = Objects.nonNull(playwrightProperties.getBrowserType()) ? playwrightProperties.getBrowserType() : PlaywrightProperties.BrowserTypeEnum.chromium;
         // Get Browser Launch Options
         BrowserType.LaunchOptions launchOptions = Objects.nonNull(playwrightProperties.getLaunchOptions()) ? playwrightProperties.getLaunchOptions().toOptions() : new BrowserType.LaunchOptions().setHeadless(true);
         // Get Browser
-        Browser browser = PlaywrightUtils.getBrowser(playwright, browserType, launchOptions);
+        Browser browser = PlaywrightUtil.getBrowser(playwright, browserType, launchOptions);
         // Create Browser Page
         Page page;
         if(Objects.nonNull(playwrightProperties.getNewPageOptions())){
