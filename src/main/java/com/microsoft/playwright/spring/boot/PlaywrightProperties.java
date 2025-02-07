@@ -15,10 +15,15 @@
  */
 package com.microsoft.playwright.spring.boot;
 
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.function.Function;
 
 /**
  *
@@ -30,20 +35,24 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
-	private BrowserType browserType = BrowserType.chromium;
-
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
 
-	private boolean preinstall = true;
-
 	/**
-	 * Browser mode. Defaults to {@link BrowserMode#incognito incognito}.
+	 *  Whether to isolate Browser session. Defaults to {@code false}.
 	 */
-	public BrowserMode browserMode = BrowserMode.incognito;
+	private boolean isolated = false;
 	/**
-	 * Browser Pool Config
+	 * Browser type. Defaults to {@link BrowserTypeEnum#chromium chromium}.
 	 */
-	private BrowserContextPoolConfig browserPool = new BrowserContextPoolConfig();
+	private BrowserTypeEnum browserType = BrowserTypeEnum.chromium;
+    /**
+     * Browser Page Pool Config
+     */
+    private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
+	/**
+	 * Browser Context Pool Config
+	 */
+	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
@@ -53,13 +62,13 @@ public class PlaywrightProperties {
 	 */
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
 	/**
-	 * Launch Persistent Options
-	 */
-	private BrowserLaunchPersistentOptions launchPersistentOptions = new BrowserLaunchPersistentOptions();
-	/**
 	 * New Context Options
 	 */
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
+	/**
+	 * New Page Options
+	 */
+	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */
@@ -69,26 +78,28 @@ public class PlaywrightProperties {
 	 */
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
 	/**
-	 * Page Set Content Options
+	 * Page Element Screenshot Options
 	 */
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
+	/**
+	 * Page Pdf Options
+	 */
+	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
-	public enum BrowserType {
-		chromium,
-		firefox,
-		webkit
-	}
+	public enum BrowserTypeEnum {
+		chromium(Playwright::chromium),
+		firefox(Playwright::firefox),
+		webkit(Playwright::webkit);
 
-	public enum BrowserMode {
+		Function<Playwright, BrowserType> function;
+		BrowserTypeEnum(Function<Playwright, BrowserType> function) {
+			this.function = function;
+		}
 
-		/**
-		 * Returns the incognito mode browser instance.
-		 */
-		incognito,
-		/**
-		 * Returns the persistent browser context instance.
-		 */
-		persistent
+		public BrowserType getBrowserType(Playwright playwright) {
+			return function.apply(playwright);
+		}
+
 	}
 
 }

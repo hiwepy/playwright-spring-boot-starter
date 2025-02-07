@@ -274,7 +274,7 @@ public class PlaywrightApplication_Test1 implements CommandLineRunner {
     protected CompletableFuture<BufferTemp> pageToPdf(String rendeId, BufferTemp urlTemp) {
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
-            log.info("Generate PDF for url: %s", urlTemp.getUrl());
+            log.info("Generate PDF for url: {}", urlTemp.getUrl());
             Page page = null;
             try {
                 // 从池中获取一个浏览器页面

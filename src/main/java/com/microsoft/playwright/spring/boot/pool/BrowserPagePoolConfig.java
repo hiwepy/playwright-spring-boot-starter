@@ -1,6 +1,6 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
 import lombok.Data;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.context.properties.PropertyMapper;
@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.PropertyMapper;
 import java.time.Duration;
 
 @Data
-public class BrowserContextPoolConfig {
+public class BrowserPagePoolConfig {
 
     private boolean blockWhenExhausted = GenericObjectPoolConfig.DEFAULT_BLOCK_WHEN_EXHAUSTED;
 
@@ -44,9 +44,9 @@ public class BrowserContextPoolConfig {
 
     private boolean testWhileIdle = GenericObjectPoolConfig.DEFAULT_TEST_WHILE_IDLE;
 
-    public GenericObjectPoolConfig<BrowserContext> toPoolConfig(){
+    public GenericObjectPoolConfig<Page> toPoolConfig(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-        GenericObjectPoolConfig<BrowserContext> poolConfig = new GenericObjectPoolConfig<>();
+        GenericObjectPoolConfig<Page> poolConfig = new GenericObjectPoolConfig<>();
         map.from(this.isBlockWhenExhausted()).to(poolConfig::setBlockWhenExhausted);
         map.from(this.getDurationBetweenEvictionRuns()).whenNonNull().to(poolConfig::setTimeBetweenEvictionRuns);
         map.from(this.getEvictionPolicyClassName()).whenHasText().to(poolConfig::setEvictionPolicyClassName);

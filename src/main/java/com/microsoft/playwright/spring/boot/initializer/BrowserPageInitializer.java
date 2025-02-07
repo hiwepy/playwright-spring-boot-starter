@@ -13,46 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.microsoft.playwright.spring.boot.hooks;
+package com.microsoft.playwright.spring.boot.initializer;
 
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
 
 @Slf4j
-public class PlaywrightInstall implements Runnable {
-	private volatile boolean isInstalled = false;
-	private BrowserContextPool browserContextPool;
-	private PlaywrightProperties playwrightProperties;
-	public PlaywrightInstall(BrowserContextPool browserContextPool, PlaywrightProperties playwrightProperties) {
-		this.browserContextPool = browserContextPool;
+public class BrowserPageInitializer implements Runnable {
+
+	private final BrowserPagePool browserPagePool;
+	private final PlaywrightProperties playwrightProperties;
+
+	public BrowserPageInitializer(BrowserPagePool browserPagePool, PlaywrightProperties playwrightProperties) {
+		this.browserPagePool = browserPagePool;
 		this.playwrightProperties = playwrightProperties;
 	}
 
 	@Override
 	public void run() {
-		if(Objects.nonNull(browserContextPool) && Objects.nonNull(playwrightProperties)){
+		if(Objects.nonNull(browserPagePool) && Objects.nonNull(playwrightProperties)){
 			try {
+				log.info("Browser Page Pool Start initialize ...");
 				// 1、触发浏览器安装
 				System.setProperty("PLAYWRIGHT_DOWNLOAD_HOST", playwrightProperties.getDownloadHost());
-				browserContextPool.borrowObject();
-				// 2、安装完成后
-				isInstalled = true;
- 				if (isInstalled) {
-					log.info("Playwright is installed.");
-				} else {
-					log.warn("Playwright is not installed yet.");
-				}
+				browserPagePool.preparePool();
+				log.info("Browser Page Pool is initialize completed.");
 			} catch (Exception e) {
-				log.error("Playwright install error", e);
+				log.error("Browser Page Pool initialize error", e);
 			}
 		}
-	}
-
-	public boolean isInstalled() {
-		return isInstalled;
 	}
 
 }

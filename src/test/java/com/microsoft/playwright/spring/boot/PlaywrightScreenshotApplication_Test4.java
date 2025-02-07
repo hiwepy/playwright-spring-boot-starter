@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -12,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.File;
 import java.util.List;
@@ -21,9 +21,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@SpringBootApplication
+//@SpringBootApplication
 @Slf4j
-public class PlaywrightApplication_Test2 implements CommandLineRunner {
+public class PlaywrightScreenshotApplication_Test4 implements CommandLineRunner {
 
     protected static final String BASE_DIR = "D://tmp";
 
@@ -31,7 +31,7 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
     private BrowserContextPool browserContextPool;
 
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(PlaywrightApplication_Test2.class, args);
+        SpringApplication.run(PlaywrightScreenshotApplication_Test4.class, args);
     }
 
     @Override
@@ -148,7 +148,7 @@ public class PlaywrightApplication_Test2 implements CommandLineRunner {
      * @return
      */
     protected List<BufferTemp> pageToPdfs(String rendeId, List<BufferTemp> urlTemps) {
-        log.info("Capturing screenshots for urls: ", urlTemps.stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
+        log.info("Capturing screenshots for urls: {}", urlTemps.stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
         // 1、使用CompletableFuture异步处理
         List<CompletableFuture<BufferTemp>> futureList = urlTemps.stream()
                 .map(urlTemp -> pageToPdf(rendeId, urlTemp))
