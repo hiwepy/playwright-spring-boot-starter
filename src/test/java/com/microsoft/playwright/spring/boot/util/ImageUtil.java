@@ -1,5 +1,6 @@
 package com.microsoft.playwright.spring.boot.util;
 
+import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.enums.PDPageSize;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -10,20 +11,73 @@ import net.coobird.thumbnailator.resizers.configurations.AlphaInterpolation;
 import net.coobird.thumbnailator.resizers.configurations.Antialiasing;
 import net.coobird.thumbnailator.resizers.configurations.Dithering;
 import net.coobird.thumbnailator.resizers.configurations.ScalingMode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.EnumMap;
+import java.util.Objects;
 
 @Slf4j
 public class ImageUtil {
 
     public static BufferedImage WHITE_A4 = ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A4.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A4.getRectangle().getHeight()).intValue());
     public static long WHITE_A4_SIZE = ImageUtil.getImageFileSize(WHITE_A4, "png");
+
+    protected static EnumMap<PDPageSize, BufferedImage> EMPTY_IMAGE_MAP = new EnumMap<>(PDPageSize.class);
+
+    static {
+        EMPTY_IMAGE_MAP.put(PDPageSize.A0, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A0.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A0.getRectangle().getHeight()).intValue()));
+        EMPTY_IMAGE_MAP.put(PDPageSize.A1, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A1.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A1.getRectangle().getHeight()).intValue()));
+        EMPTY_IMAGE_MAP.put(PDPageSize.A2, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A2.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A2.getRectangle().getHeight()).intValue()));
+        EMPTY_IMAGE_MAP.put(PDPageSize.A3, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A3.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A3.getRectangle().getHeight()).intValue()));
+        EMPTY_IMAGE_MAP.put(PDPageSize.A4, WHITE_A4);
+        EMPTY_IMAGE_MAP.put(PDPageSize.A5, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A5.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A5.getRectangle().getHeight()).intValue()));
+        EMPTY_IMAGE_MAP.put(PDPageSize.A6, ImageUtil.getWhiteImage(Float.valueOf(PDPageSize.A6.getRectangle().getWidth()).intValue(), Float.valueOf(PDPageSize.A6.getRectangle().getHeight()).intValue()));
+    }
+
+    public static BufferedImage getBufferedImage(BufferTemp screenshot) {
+        BufferedImage awtImage = null;
+        // 从图片流中读取图片
+        if(Objects.nonNull(screenshot.getBuffer())){
+            log.info("Load Input Stream From Screenshot Buffer, size: {}", screenshot.getBuffer().length);
+            try(ByteArrayInputStream bis = new ByteArrayInputStream(screenshot.getBuffer())) {
+                // 从图片流中读取图片
+                awtImage = ImageIO.read(bis);
+            } catch (Exception ex){
+                log.error("Read Image From Buffer Error: {}", ex.getMessage());
+            }
+        } else if(StringUtils.isNotBlank(screenshot.getPath())){
+            log.info("Load Image From Screenshot Path: {}", screenshot.getPath());
+            File imgFile = new File(screenshot.getPath());
+            if(imgFile.exists()){
+                try {
+                    // 从图片流中读取图片
+                    awtImage = ImageIO.read(imgFile);
+                } catch (Exception ex){
+                    log.error("Read Image From File Error: {}", ex.getMessage());
+                }
+            } else {
+                log.warn("Image File Not Found: {}", screenshot.getPath());
+            }
+        }
+        return awtImage;
+    }
+
+    public static synchronized BufferedImage getWhiteImage(PDPageSize pdPageSize) {
+        BufferedImage emptyImage = EMPTY_IMAGE_MAP.get(pdPageSize);
+        if (Objects.isNull(emptyImage)) {
+            EMPTY_IMAGE_MAP.putIfAbsent(pdPageSize, ImageUtil.getWhiteImage(Float.valueOf(pdPageSize.getRectangle().getWidth()).intValue(), Float.valueOf(pdPageSize.getRectangle().getHeight()).intValue()));
+            emptyImage =  EMPTY_IMAGE_MAP.get(pdPageSize);
+        }
+        return emptyImage;
+    }
 
     public static long getImageFileSize(BufferedImage image, String formatName) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();) {

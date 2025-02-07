@@ -10,6 +10,7 @@ import com.microsoft.playwright.spring.boot.PlaywrightRenderProperties;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.ResourceType;
+import com.microsoft.playwright.spring.boot.monitor.MemoryMonitor;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
@@ -81,7 +82,9 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
     protected ThreadPoolExecutor dtpToPdfExecutor;
     @Resource
     protected ThreadPoolExecutor dtpToPdfMergeExecutor;
-
+    @Autowired
+    protected MemoryMonitor memoryMonitor;
+    
     protected ApplicationEventPublisher eventPublisher;
     protected Function<BufferTemp, Boolean> customPresentable;
 
@@ -97,6 +100,9 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
 
     @Override
     public WkhtmlRenderResultVO render(B renderBO) throws Exception {
+        if (!memoryMonitor.isMemoryAvailable()) {
+            throw new PlaywrightException("System memory usage is too high, please try again later");
+        }
         log.info("=================Playwright 渲染 HTML:开始=================");
         String randerId = String.valueOf(getSequence().nextId());
         StopWatch stopWatch = new StopWatch(randerId);

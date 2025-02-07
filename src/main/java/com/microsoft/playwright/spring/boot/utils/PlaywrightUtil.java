@@ -145,9 +145,10 @@ public class PlaywrightUtil {
                 log.debug("Close page Instance Success.");
             }
         } catch (Exception e) {
-            log.error("Close Page Error.", e);
+            log.warn("Failed to close page", e);
             // ignore error
         }
+
     }
 
 }

@@ -60,11 +60,21 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         if (Objects.isNull(browserContext)) {
             return;
         }
-        // Cleanup browser context
-        cleanupBrowserContext(browserContext);
-        PLAYWRIGHT_MAP.remove(browserContext);
-        browserContext.close();
-        log.info("Destroy BrowserContext Instance '{}'.", browserContext);
+        try {
+            // Cleanup browser context
+            cleanupBrowserContext(browserContext);
+            // 2. 关闭上下文
+            browserContext.close();
+            // 3. 清理 Playwright 实例（如果监听器没有处理）
+            Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+            if (playwright != null) {
+                playwright.close();
+                log.info("Cleaned up Playwright instance in destroyObject");
+            } 
+        } catch (Exception e) {
+            log.error("Error destroying browser context", e);
+            throw e;
+        }
     }
 
     public void cleanupBrowserContext(BrowserContext browserContext) {
@@ -72,17 +82,10 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
             return;
         }
         log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
+        // 1. 清理 Cookie
         browserContext.clearCookies();
-        // Cleanup pages
-        List<Page> pages = browserContext.pages();
-        if (!CollectionUtils.isEmpty(pages)) {
-            for (Page page : pages) {
-                if (page.isClosed()) {
-                    continue;
-                }
-                log.info("Destroy page of BrowserContext Instance '{}'.", browserContext);
-            }
-        }
+        // 2. 关闭所有页面
+        browserContext.pages().forEach(PlaywrightUtil::closePage);
     }
 
     /**
@@ -102,11 +105,22 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         log.info("Create Browser Instance .");
         BrowserType browserType = browserTypeEnum.getBrowserType(playwright);
         Browser browser = browserType.launch(launchOptions);
-        browser.onDisconnected((b) -> {
-            log.error("Browser disconnected: {}", b);
-            if (Objects.nonNull(playwright)) {
-                playwright.close();
-                log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);
+        // 添加断开连接监听器
+        browser.onDisconnected((b) -> { 
+            try {
+                log.info("Browser disconnected, cleaning up resources...");
+                // 获取相关的 BrowserContext
+                BrowserContext context = b.contexts().stream().findFirst().orElse(null);
+                if (Objects.nonNull(context)) {
+                    // 从 Map 中移除并关闭 Playwright
+                    Playwright pw = PLAYWRIGHT_MAP.remove(context);
+                    if (Objects.nonNull(pw)) {
+                        pw.close();
+                        log.info("Cleaned up Playwright instance on browser disconnect");
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error cleaning up resources on browser disconnect", e);
             }
         });
         log.info("Create Browser Instance {} Success.", browser);
