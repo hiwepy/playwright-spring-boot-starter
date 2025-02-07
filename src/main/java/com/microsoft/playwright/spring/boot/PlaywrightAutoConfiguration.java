@@ -1,13 +1,14 @@
 package com.microsoft.playwright.spring.boot;
 
-import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.spring.boot.hooks.PlaywrightHook;
-import com.microsoft.playwright.spring.boot.hooks.PlaywrightInstall;
+import com.microsoft.playwright.spring.boot.initializer.BrowserContextInitializer;
+import com.microsoft.playwright.spring.boot.initializer.BrowserPageInitializer;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
+import com.microsoft.playwright.spring.boot.pool.BrowserPagePooledObjectFactory;
 import com.microsoft.playwright.spring.boot.utils.JmxBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -17,7 +18,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
 
 @Configuration
 @ConditionalOnClass({ Playwright.class, PooledObjectFactory.class })
@@ -25,52 +25,56 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class PlaywrightAutoConfiguration {
 
-    @Bean(name = "browserContextPool")
+    @Bean
     @ConditionalOnMissingBean
-    public BrowserContextPool browserContextPool(PlaywrightProperties playwrightProperties){
+    public BrowserPagePooledObjectFactory browserPooledObjectFactory(PlaywrightProperties playwrightProperties){
+        return new BrowserPagePooledObjectFactory(playwrightProperties);
+    }
 
-        // 1、创建 BrowserContextPooledObjectFactory 对象
+    @Bean
+    @ConditionalOnMissingBean
+    public BrowserPagePool browserPool(PlaywrightProperties playwrightProperties, BrowserPagePooledObjectFactory browserPagePooledObjectFactory){
 
-        Browser.NewContextOptions newContextOptions = playwrightProperties.getNewContextOptions().toOptions();
-        BrowserContextPooledObjectFactory factory;
-        switch (playwrightProperties.getBrowserMode()){
-            case persistent: {
+        // 1、创建 GenericObjectPoolConfig 对象，并进行必要的配置
+        GenericObjectPoolConfig<Page> poolConfig = playwrightProperties.getBrowserPagePool().toPoolConfig();
+        poolConfig.setJmxEnabled(Boolean.FALSE);
+        poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserPagePool.class));
 
-                BrowserType.LaunchPersistentContextOptions launchPersistentOptions = playwrightProperties.getLaunchPersistentOptions().toOptions();
-                String userDataRootDir;
-                if(StringUtils.hasText(playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir())){
-                    userDataRootDir = playwrightProperties.getLaunchPersistentOptions().getUserDataRootDir();
-                } else {
-                    userDataRootDir = System.getProperty("java.io.tmpdir");
-                }
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchPersistentOptions, userDataRootDir);
+        // 2、创建 BrowserPool 对象
+        BrowserPagePool browserPagePool = new BrowserPagePool(browserPagePooledObjectFactory, poolConfig);
 
-            };break;
-            default: {
+        // 3、创建 PlaywrightBrowserInitializer 实例
+        BrowserPageInitializer installer = new BrowserPageInitializer(browserPagePool, playwrightProperties);
 
-                BrowserType.LaunchOptions launchOptions = playwrightProperties.getLaunchOptions().toOptions();
-                factory = new BrowserContextPooledObjectFactory(playwrightProperties.getBrowserType(), launchOptions, newContextOptions);
+        // 4、调用 run 方法开始安装
+        installer.run();
 
-            };break;
-        }
+        return browserPagePool;
+    }
 
-        Runtime.getRuntime().addShutdownHook(new PlaywrightHook(factory, 0));
+    @Bean
+    @ConditionalOnMissingBean
+    public BrowserContextPooledObjectFactory browserContextPooledObjectFactory(PlaywrightProperties playwrightProperties){
+        return new BrowserContextPooledObjectFactory(playwrightProperties);
+    }
 
-        // 2、创建 GenericObjectPoolConfig 对象，并进行必要的配置
-        GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserPool().toPoolConfig();
+    @Bean
+    @ConditionalOnMissingBean
+    public BrowserContextPool browserContextPool(PlaywrightProperties playwrightProperties, BrowserContextPooledObjectFactory browserContextPooledObjectFactory){
+
+        // 1、创建 GenericObjectPoolConfig 对象，并进行必要的配置
+        GenericObjectPoolConfig<BrowserContext> poolConfig = playwrightProperties.getBrowserContextPool().toPoolConfig();
         poolConfig.setJmxEnabled(Boolean.FALSE);
         poolConfig.setJmxNameBase(JmxBeanUtils.getObjectName(BrowserContextPool.class));
 
-        // 3、创建 BrowserContextPool 对象
-        BrowserContextPool browserContextPool = new BrowserContextPool(factory, poolConfig);
+        // 2、创建 BrowserContextPool 对象
+        BrowserContextPool browserContextPool = new BrowserContextPool(browserContextPooledObjectFactory, poolConfig);
 
-        // 4、判断是否需要预安装浏览器
-        if(playwrightProperties.isPreinstall()){
-            // 4.1、创建 PlaywrightInstall 实例
-            PlaywrightInstall installer =  new PlaywrightInstall(browserContextPool, playwrightProperties);
-            // 4.2、调用 run 方法开始安装
-            installer.run();
-        }
+        // 3、创建 PlaywrightInstall 实例
+        BrowserContextInitializer installer = new BrowserContextInitializer(browserContextPool, playwrightProperties);
+
+        // 4、调用 run 方法开始安装
+        installer.run();
 
         return browserContextPool;
     }

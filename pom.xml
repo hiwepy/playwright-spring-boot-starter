@@ -360,12 +360,17 @@
 		<!-- Dependency versions -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<commons-exec.version>1.4.0</commons-exec.version>
 		<commons-pool2.version>2.12.0</commons-pool2.version>
 		<commons-lang3.version>3.14.0</commons-lang3.version>
 		<commons-io.version>2.16.1</commons-io.version>
+		<fastjson2.version>2.0.53</fastjson2.version>
+		<guava.version>33.2.1-jre</guava.version>
+		<pdfbox.version>3.0.3</pdfbox.version>
 		<playwright.version>1.48.0</playwright.version>
 		<spring-biz.version>1.1.5.RELEASE</spring-biz.version>
 		<transmittable-thread-local.version>2.14.2</transmittable-thread-local.version>
+		<thumbnailator.version>0.4.19</thumbnailator.version>
 		<maven.version>3.0</maven.version>
        	<maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
@@ -382,6 +387,11 @@
 				<groupId>com.microsoft.playwright</groupId>
 				<artifactId>playwright</artifactId>
 				<version>${playwright.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-exec</artifactId>
+				<version>${commons-exec.version}</version>
 			</dependency>
 			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
 			<dependency>
@@ -401,6 +411,41 @@
 				<artifactId>commons-io</artifactId>
 				<version>${commons-io.version}</version>
 			</dependency>
+			<!-- https://mvnrepository.com/artifact/com.alibaba.fastjson2/fastjson2 -->
+			<dependency>
+				<groupId>com.alibaba.fastjson2</groupId>
+				<artifactId>fastjson2</artifactId>
+				<version>${fastjson2.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- http://mvnrepository.com/artifact/com.google.guava/guava -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox -->
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox</artifactId>
+				<version>${pdfbox.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox-tools -->
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox-tools</artifactId>
+				<version>${pdfbox.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox-debugger -->
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox-debugger</artifactId>
+				<version>${pdfbox.version}</version>
+				<scope>test</scope>
+			</dependency>
 			<dependency>
 				<groupId>com.github.hiwepy</groupId>
 				<artifactId>spring-biz</artifactId>
@@ -411,6 +456,18 @@
 				<groupId>com.alibaba</groupId>
 				<artifactId>transmittable-thread-local</artifactId>
 				<version>${transmittable-thread-local.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/net.coobird/thumbnailator -->
+			<!-- Thumbnailator是一个用来生成图像缩略图的 Java类库，通过很简单的代码即可生成图片缩略图，也可直接对一整个目录的图片生成缩略图。 -->
+			<!--
+                Thumbnailator 是一个纯java的图片压缩工具，可以进行图片的裁剪，压缩，格式转换，旋转图片，
+                 水印处理，压缩后图片不失真，经测试，9M的图片压缩后像素不变的情况下文件大小只有800K
+            -->
+			<dependency>
+				<groupId>net.coobird</groupId>
+				<artifactId>thumbnailator</artifactId>
+				<version>${thumbnailator.version}</version>
+				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -474,6 +531,11 @@
 			<groupId>com.microsoft.playwright</groupId>
 			<artifactId>playwright</artifactId>
 		</dependency>
+		<!-- Apache Commons Exec -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-exec</artifactId>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -498,6 +560,35 @@
 			<artifactId>transmittable-thread-local</artifactId>
 		</dependency>
 
+		<!-- For Image to pdf -->
+		<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/net.coobird/thumbnailator -->
+		<!-- Thumbnailator是一个用来生成图像缩略图的 Java类库，通过很简单的代码即可生成图片缩略图，也可直接对一整个目录的图片生成缩略图。 -->
+		<!--
+            Thumbnailator 是一个纯java的图片压缩工具，可以进行图片的裁剪，压缩，格式转换，旋转图片，
+             水印处理，压缩后图片不失真，经测试，9M的图片压缩后像素不变的情况下文件大小只有800K
+        -->
+		<dependency>
+			<groupId>net.coobird</groupId>
+			<artifactId>thumbnailator</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.alibaba.fastjson2/fastjson2 -->
+		<dependency>
+			<groupId>com.alibaba.fastjson2</groupId>
+			<artifactId>fastjson2</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>
