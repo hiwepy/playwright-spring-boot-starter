@@ -85,30 +85,16 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         renderBO.setParam(Base64Utils.encodeToString(JSON.toJSONString(params).getBytes()));
         renderBO.setAsync(true);
         WkhtmlRenderResultVO resultBO = null;
-        try {
-            // 2.2、渲染 PDF
-            CompletableFuture.allOf(CompletableFuture.runAsync(() -> {
-                try {
-                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
-                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }),CompletableFuture.runAsync(() -> {
-                try {
-                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
-                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            })).join();
-            //resultBO = renderStrategyRouter.route(RenderType.TO_PDF_BUFFER).render(renderBO);
-
-        } catch (Exception e) {
-            log.error("pdf生成失败;", e);
-        } finally {
-            // 3、删除临时文件
-            //renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
+        for (int i = 0; i < 100; i++) {
+            try {
+                renderBO.setRanderId(Objects.toString(sequence.nextId()));
+                renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+            } catch (Exception e) {
+                log.error("pdf生成失败;", e);
+            } finally {
+                // 3、删除临时文件
+                //renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
+            }
         }
     }
 

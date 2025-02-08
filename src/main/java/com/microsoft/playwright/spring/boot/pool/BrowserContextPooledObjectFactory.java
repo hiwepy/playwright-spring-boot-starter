@@ -1,24 +1,16 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.alibaba.ttl.TransmittableThreadLocal;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
 import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.util.CollectionUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 @Slf4j
 public class BrowserContextPooledObjectFactory implements PooledObjectFactory<BrowserContext>, DisposableBean {
@@ -62,7 +54,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
         try {
             // Cleanup browser context
-            cleanupBrowserContext(browserContext);
+            PlaywrightUtil.cleanupBrowserContext(browserContext);
             // 2. 关闭上下文
             browserContext.close();
             // 3. 清理 Playwright 实例（如果监听器没有处理）
@@ -77,16 +69,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         }
     }
 
-    public void cleanupBrowserContext(BrowserContext browserContext) {
-        if (Objects.isNull(browserContext)) {
-            return;
-        }
-        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
-        // 1. 清理 Cookie
-        browserContext.clearCookies();
-        // 2. 关闭所有页面
-        browserContext.pages().forEach(PlaywrightUtil::closePage);
-    }
+
 
     /**
      * 创建池中物（playwright）
@@ -106,22 +89,26 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         BrowserType browserType = browserTypeEnum.getBrowserType(playwright);
         Browser browser = browserType.launch(launchOptions);
         // 添加断开连接监听器
-        browser.onDisconnected((b) -> { 
-            try {
-                log.info("Browser disconnected, cleaning up resources...");
-                // 获取相关的 BrowserContext
-                BrowserContext context = b.contexts().stream().findFirst().orElse(null);
-                if (Objects.nonNull(context)) {
-                    // 从 Map 中移除并关闭 Playwright
-                    Playwright pw = PLAYWRIGHT_MAP.remove(context);
-                    if (Objects.nonNull(pw)) {
-                        pw.close();
-                        log.info("Cleaned up Playwright instance on browser disconnect");
+        browser.onDisconnected((b) -> {
+            log.info("Browser disconnected, cleaning up resources...");
+            b.contexts().forEach(context -> {
+                try {
+                    // 获取相关的 BrowserContext
+                    if (Objects.nonNull(context)) {
+                        // 清理浏览器上下文
+                        PlaywrightUtil.cleanupBrowserContext(context);
+                        context.close();
+                        // 从 Map 中移除并关闭 Playwright
+                        Playwright pw = PLAYWRIGHT_MAP.remove(context);
+                        if (Objects.nonNull(pw)) {
+                            pw.close();
+                            log.info("Cleaned up Playwright instance on browser disconnect");
+                        }
                     }
+                } catch (Exception e) {
+                    log.error("Error cleaning up resources on browser disconnect", e);
                 }
-            } catch (Exception e) {
-                log.error("Error cleaning up resources on browser disconnect", e);
-            }
+            });
         });
         log.info("Create Browser Instance {} Success.", browser);
         // Get Browser New Context Options
@@ -171,7 +158,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     public void destroy() throws Exception {
         PLAYWRIGHT_MAP.forEach((browserContext, playwright) -> {
             // Cleanup browser context
-            cleanupBrowserContext(browserContext);
+            PlaywrightUtil.cleanupBrowserContext(browserContext);
+            browserContext.close();
             if (playwright != null) {
                 playwright.close();
                 log.info("Destroy browserContext of Playwright Instance '{}' Success.", playwright);

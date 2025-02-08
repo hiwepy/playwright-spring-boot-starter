@@ -91,7 +91,7 @@ public class PlaywrightProperties {
 	 */
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
-	public enum BrowserTypeEnum {
+    public enum BrowserTypeEnum {
 		chromium(Playwright::chromium),
 		firefox(Playwright::firefox),
 		webkit(Playwright::webkit);

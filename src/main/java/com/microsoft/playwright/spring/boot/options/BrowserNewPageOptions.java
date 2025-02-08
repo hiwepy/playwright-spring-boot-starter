@@ -215,6 +215,8 @@ public class BrowserNewPageOptions {
      */
     public ViewportSize viewportSize;
 
+    public Integer maxPagesPerBrowser = 8;
+
     public Browser.NewPageOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Browser.NewPageOptions options = new Browser.NewPageOptions();

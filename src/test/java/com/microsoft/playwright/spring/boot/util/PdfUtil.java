@@ -36,7 +36,10 @@ public class PdfUtil {
         return information;
     }
 
-
+    public static void setDocumentInformation(PDDocument pdDocument, WkhtmlRenderBO renderBO) {
+        PDDocumentInformation information = information(renderBO);
+        pdDocument.setDocumentInformation(information);
+    }
 
     public static void addPages(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots, PDDocument pdDocument) throws IOException {
         // 设置PDF属性
@@ -87,4 +90,5 @@ public class PdfUtil {
         System.out.println("staticFile: " + joiner);
 
     }
+
 }
