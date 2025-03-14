@@ -35,7 +35,12 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
+	private static final double MEMORY_THRESHOLD = 0.85d; // 80%内存使用率阈值
+
+
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
+
+	private double memoryThreshold = MEMORY_THRESHOLD;
 
 	/**
 	 *  Whether to isolate Browser session. Defaults to {@code false}.
@@ -86,7 +91,7 @@ public class PlaywrightProperties {
 	 */
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
-	public enum BrowserTypeEnum {
+    public enum BrowserTypeEnum {
 		chromium(Playwright::chromium),
 		firefox(Playwright::firefox),
 		webkit(Playwright::webkit);

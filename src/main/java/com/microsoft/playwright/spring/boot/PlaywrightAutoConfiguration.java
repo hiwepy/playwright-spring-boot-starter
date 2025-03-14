@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.initializer.BrowserContextInitializer;
 import com.microsoft.playwright.spring.boot.initializer.BrowserPageInitializer;
+import com.microsoft.playwright.spring.boot.monitor.MemoryMonitor;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPooledObjectFactory;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
@@ -24,6 +25,11 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(PlaywrightProperties.class)
 @Slf4j
 public class PlaywrightAutoConfiguration {
+
+    @Bean
+    public MemoryMonitor memoryMonitor(PlaywrightProperties playwrightProperties){
+        return new MemoryMonitor(playwrightProperties.getMemoryThreshold());
+    }
 
     @Bean
     @ConditionalOnMissingBean

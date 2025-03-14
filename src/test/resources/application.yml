@@ -1,11 +1,13 @@
 server:
   port: 8070
-
+spring:
+  main:
+    allow-circular-references: true
 ################################################################################################################
 ###Playwright（PlaywrightProperties）配置：
 ################################################################################################################
 playwright:
-  isolated: false
+  isolated: true
   browser-type: chromium
   browser-page-pool:
     max-idle: 16

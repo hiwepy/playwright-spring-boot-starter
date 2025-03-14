@@ -53,10 +53,18 @@ public class WkhtmlToPdfBufferRenderStrategy extends WkhtmlToImageBufferRenderSt
             // 请求数+1
             // 创建空白文档
             try (PDDocument pdDocument = new PDDocument()) {
+                // 设置文档信息
+                PdfUtil.setDocumentInformation(pdDocument, renderBO);
+                // 添加页面
                 PdfUtil.addPages(renderBO, screenshots, pdDocument);
+                // 使用ByteArrayOutputStream保存PDF
                 try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                     pdDocument.save(outputStream);
-                    return BufferTemp.builder().index(0).name(pdfFileName).buffer(outputStream.toByteArray()).build();
+                    return BufferTemp.builder()
+                        .index(0)
+                        .name(pdfFileName)
+                        .buffer(outputStream.toByteArray())
+                        .build();
                 }
             } catch (Exception e) {
                 throw new TaskRuntimeException("Merging screenshots to PDF failed", e);

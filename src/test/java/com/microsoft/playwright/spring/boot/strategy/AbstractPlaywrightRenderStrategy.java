@@ -10,6 +10,7 @@ import com.microsoft.playwright.spring.boot.PlaywrightRenderProperties;
 import com.microsoft.playwright.spring.boot.bo.BufferTemp;
 import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.ResourceType;
+import com.microsoft.playwright.spring.boot.monitor.MemoryMonitor;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
@@ -46,9 +47,6 @@ import java.util.function.Function;
 /**
  * 抽象的 Playwright 处理策略
  */
-/**
- * 抽象的 Playwright 处理策略
- */
 @Slf4j
 public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO> implements PlaywrightRenderStrategy<B>, InitializingBean, ApplicationEventPublisherAware {
 
@@ -71,6 +69,8 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
     protected BrowserPagePool browserPagePool;
     @Autowired
     protected BrowserContextPool browserContextPool;
+    @Autowired
+    protected MemoryMonitor memoryMonitor;
     @Resource
     protected ThreadPoolExecutor dtpToImageExecutor;
     @Resource
@@ -90,13 +90,26 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         // TODO Auto-generated method stub
     }
 
+    /**
+     * 设置自定义判断方法
+     * @param function 自定义判断方法
+     */
     @Override
     public void customPresentable(Function<BufferTemp, Boolean> function) {
         this.customPresentable = function;
     }
 
+    /**
+     * 渲染HTML
+     * @param renderBO 渲染参数
+     * @return 渲染结果
+     * @throws Exception 异常
+     */
     @Override
     public WkhtmlRenderResultVO render(B renderBO) throws Exception {
+        if (!memoryMonitor.isMemoryAvailable()) {
+            throw new PlaywrightException("System memory usage is too high, please try again later");
+        }
         log.info("=================Playwright 渲染 HTML:开始=================");
         String randerId = String.valueOf(getSequence().nextId());
         StopWatch stopWatch = new StopWatch(randerId);
@@ -173,14 +186,28 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         this.cleanTemporary(renderBO, resultBO);
     }
 
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return 截图
+     */
     protected final CompletableFuture<BufferTemp> captureScreenshotAsync(String rendeId, BufferTemp urlTemp, String selector){
         if(playwrightRenderProperties.isIsolated()){
-            return this.captureScreenshotAsync1(rendeId, urlTemp, selector);
+            return this.captureScreenshotAsyncOnIsolated(rendeId, urlTemp, selector);
         }
-        return this.captureScreenshotAsync2(rendeId, urlTemp, selector);
+        return this.captureScreenshotAsyncOffIsolated(rendeId, urlTemp, selector);
     }
 
-    protected CompletableFuture<BufferTemp> captureScreenshotAsync1(String rendeId, BufferTemp urlTemp, String selector){
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return 截图
+     */
+    protected CompletableFuture<BufferTemp> captureScreenshotAsyncOnIsolated(String rendeId, BufferTemp urlTemp, String selector){
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
@@ -220,7 +247,14 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }, dtpToImageExecutor);
     }
 
-    protected CompletableFuture<BufferTemp> captureScreenshotAsync2(String rendeId, BufferTemp urlTemp, String selector){
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return 截图
+     */
+    protected CompletableFuture<BufferTemp> captureScreenshotAsyncOffIsolated(String rendeId, BufferTemp urlTemp, String selector){
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             Page page = null;
@@ -253,6 +287,14 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }, dtpToImageExecutor);
     }
 
+    /**
+     * 同步截图
+     * @param browser 浏览器
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @param selector 选择器
+     * @return 截图
+     */
     protected BufferTemp captureScreenshotSync(Browser browser, String rendeId, BufferTemp urlTemp, String selector){
         try (Page page = browser.newPage()) {
             // 跳转到url
@@ -322,15 +364,13 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         });
         page.onRequest(request -> {
             if(urlTemp.isReload()){
-                log.debug("Reload Request url: {}, resource type：{}, method：{}, headers：{}, postData：{}", request.url(), request.resourceType(),
-                        request.method(), request.headers(), request.postData());
+                log.debug("Reload Request url: {}, resource type：{}, method：{}, postData：{}", request.url(), request.resourceType(), request.method(), request.postData());
             } else {
-                log.debug("Request url: {}, resource type：{}, method：{}, headers：{}, postData：{}", request.url(), request.resourceType(),
-                        request.method(), request.headers(), request.postData());
+                log.debug("Request url: {}, resource type：{}, method：{}, postData：{}", request.url(), request.resourceType(), request.method(), request.postData());
             }
         });
         page.onRequestFailed(request -> {
-            if(urlTemp.isReload()){
+            if( urlTemp.isReload()){
                 log.error("Reload Request failed: {}, resource type：{}, reason：{}", request.url(), request.resourceType(), request.failure());
             } else {
                 log.error("Request failed: {}, resource type：{}, reason：{}", request.url(), request.resourceType(), request.failure());
@@ -484,6 +524,12 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         };
     }
 
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @return 截图
+     */
     protected final CompletableFuture<BufferTemp> pageToPdfFutureAsync(String rendeId, BufferTemp urlTemp) {
         if(playwrightRenderProperties.isIsolated()){
             return this.pageToPdfFutureAsync1(rendeId, urlTemp);
@@ -528,6 +574,12 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }, dtpToPdfExecutor);
     }
 
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @return 截图
+     */
     protected CompletableFuture<BufferTemp> pageToPdfFutureAsync2(String rendeId, BufferTemp urlTemp) {
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
@@ -556,6 +608,13 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }, dtpToPdfExecutor);
     }
 
+    /**
+     * 同步截图
+     * @param browser 浏览器
+     * @param rendeId 渲染ID
+     * @param urlTemp url信息
+     * @return 截图
+     */
     protected BufferTemp pageToPdfFutureSync(Browser browser, String rendeId, BufferTemp urlTemp) {
         try (Page page = browser.newPage()) {
             log.info("Sync Generate pdf start for rendeId: {}, url : {}", rendeId, urlTemp.getUrl());
@@ -571,6 +630,11 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         }
     }
 
+    /**
+     * 异步截图
+     * @param rendeId 渲染ID
+     * @return 截图
+     */
     protected BiFunction<Page, BufferTemp, BufferTemp> doPageToPdf(String rendeId) {
         return (page, urlTemp) -> {
             try {
@@ -604,6 +668,11 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         };
     }
 
+    /**
+     * 清理临时文件
+     * @param renderBO 渲染参数
+     * @param resultBO 渲染结果
+     */
     @Override
     public void cleanTemporary(B renderBO, WkhtmlRenderResultVO resultBO) {
         log.info("clean Temporary");
@@ -631,11 +700,19 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         return eventPublisher;
     }
 
+    /**
+     * 设置事件发布者
+     * @param eventPublisher 事件发布者
+     */
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
     }
 
+    /**
+     * 获取序列
+     * @return 序列
+     */
     protected Sequence getSequence() {
         return sequence;
     }
