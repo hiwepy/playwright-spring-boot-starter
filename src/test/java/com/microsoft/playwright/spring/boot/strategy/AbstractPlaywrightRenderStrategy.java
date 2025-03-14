@@ -390,14 +390,14 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             }
         });
         page.onPageError(exception -> {
-            log.error("page error: {}", exception);
+            log.error("Page error: {}", exception);
             urlTemp.setNeedReload(true);
-            log.debug("page need retry for url : {}", page.url());
+            log.debug("Page need retry for url : {}", page.url());
         });
         page.onCrash(page1 -> {
-            log.error("page crash for url : {}", page1.url());
+            log.error("Page crash for url : {}", page1.url());
             urlTemp.setNeedReload(true);
-            log.debug("page crash and need reload for url : {}", page1.url());
+            log.debug("Page crash and need reload for url : {}", page1.url());
         });
         // 设置页面加载参数, 并跳转到url
         Page.NavigateOptions navigateOptions = playwrightProperties.getPageNavigateOptions().toOptions();
@@ -419,7 +419,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             });
             // 等待异步任务完成
             future.join();
-            log.debug("The page load wait completed for : {}", page.url());
+            log.debug("The page load wait {} milliseconds completed for : {}", playwrightRenderProperties.getLoadWaitDuration().toMillis(), page.url());
         }
         log.debug("The page load completed for : {}", page.url());
         // 执行回调函数（截图、单页生成pdf）
