@@ -136,14 +136,22 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             renderBO.setCompress(Objects.nonNull(renderBO.getCompress()) ? renderBO.getCompress() : Boolean.FALSE);
             renderBO.setToFile(Objects.nonNull(renderBO.getToFile()) ? renderBO.getToFile() : Boolean.FALSE);
             // 2、执行内容生成逻辑
+            AtomicInteger genRetry = new AtomicInteger(0);
             List<BufferTemp> fileBuffers;
-            try {
-                log.info("=================Playwright 渲染 PDF/Image:开始=================");
-                stopWatch.start("Playwright 渲染 PDF/Image");
-                fileBuffers = this.doGenerate(renderBO);
-            } finally {
-                stopWatch.stop();
-                log.info("=================Playwright 渲染 PDF/Image:结束=================");
+            do {
+                try {
+                    log.info("=================Playwright 渲染 PDF/Image:开始=================");
+                    stopWatch.start("Playwright 渲染 PDF/Image");
+                    fileBuffers = this.doGenerate(renderBO);
+                } finally {
+                    stopWatch.stop();
+                    log.info("=================Playwright 渲染 PDF/Image:结束=================");
+                }
+            } while (playwrightRenderProperties.isRetryAble()
+                    && fileBuffers.stream().anyMatch(urlTemp -> urlTemp.isNeedReload()));
+            // TODO 检查生成的文件是否符合要求，如果不符合要求，则重新生成
+            if(CollectionUtils.isEmpty(fileBuffers)){
+                throw new PlaywrightException("Generate fileBuffers is empty");
             }
             // 2、执行打包内容生成逻辑
             try {
