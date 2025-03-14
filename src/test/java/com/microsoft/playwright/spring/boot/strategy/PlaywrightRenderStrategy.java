@@ -18,7 +18,7 @@ public interface PlaywrightRenderStrategy<B extends WkhtmlRenderBO> {
      * @param renderBO 渲染参数来源 BO
      */
     WkhtmlRenderResultVO render(B renderBO) throws Exception;
- 
+
     /**
      * 设置自定义判断方法
      * @param function 自定义判断方法

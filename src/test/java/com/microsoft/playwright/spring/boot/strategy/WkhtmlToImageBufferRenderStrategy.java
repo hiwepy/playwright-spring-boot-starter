@@ -103,7 +103,7 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
                 .map(screenshot -> compressScreenshot(screenshot, quality))
                 .collect(Collectors.toList());
         // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
         CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                 .thenApply(v -> futureList.stream().map(CompletableFuture::join).collect(Collectors.toList()));
         return resultFuture.join();

@@ -42,7 +42,7 @@ public class WkhtmlToPdfMergerFileRenderStrategy extends WkhtmlToPdfMergerBuffer
                     .map(urlTemp -> pageToPdfFutureAsync(renderBO.getRanderId(), urlTemp))
                     .collect(Collectors.toList());
             // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                     .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> StringUtils.isNotBlank(urlTemp.getPath())).collect(Collectors.toList()));
             return resultFuture.join();
@@ -76,7 +76,7 @@ public class WkhtmlToPdfMergerFileRenderStrategy extends WkhtmlToPdfMergerBuffer
             log.info("Merging pdf files to PDF: {}", pdfFileName);
             // 如果有多个文件，则合并pdf文件
             try {
-                /**
+                /*
                  * org.apache.pdfbox.util.PDFMergerUtility：pdf合并工具类
                  * https://blog.csdn.net/qq_38998209/article/details/127983909
                  */
