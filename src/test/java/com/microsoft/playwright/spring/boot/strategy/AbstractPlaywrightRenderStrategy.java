@@ -136,7 +136,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             renderBO.setCompress(Objects.nonNull(renderBO.getCompress()) ? renderBO.getCompress() : Boolean.FALSE);
             renderBO.setToFile(Objects.nonNull(renderBO.getToFile()) ? renderBO.getToFile() : Boolean.FALSE);
             // 2、执行内容生成逻辑
-            AtomicInteger genRetry = new AtomicInteger(0);
+            AtomicInteger genTimes = new AtomicInteger(0);
             List<BufferTemp> fileBuffers;
             do {
                 try {
@@ -144,6 +144,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                     stopWatch.start("Playwright 渲染 PDF/Image");
                     fileBuffers = this.doGenerate(renderBO);
                 } finally {
+                    genTimes.incrementAndGet();
                     stopWatch.stop();
                     log.info("=================Playwright 渲染 PDF/Image:结束=================");
                 }
