@@ -42,8 +42,8 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
 
     /**
      * 定义一个浏览器内容截图方法
-     * @param renderBO
-     * @return
+     * @param renderBO 渲染参数
+     * @return 截图缓存
      */
     protected List<BufferTemp> pageToPdfs(WkhtmlRenderBO renderBO) {
         log.info("Generate PDF for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
@@ -53,7 +53,7 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
                     .map(urlTemp -> pageToPdfFutureAsync(renderBO.getRanderId(), urlTemp))
                     .collect(Collectors.toList());
             // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                     .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList()));
             return resultFuture.join();
@@ -68,8 +68,6 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
             }
         }
     }
-
-
 
     @Override
     protected List<BufferTemp> doCompress(WkhtmlRenderBO renderBO, List<BufferTemp> pdfs) {
@@ -96,9 +94,8 @@ public class WkhtmlToPdfMergerBufferRenderStrategy extends AbstractPlaywrightRen
 
     /**
      * 定义一个图片合并为PDF方法
-     * @param renderBO
-     * @param pdfs
-     * @throws IOException
+     * @param renderBO 渲染参数
+     * @param pdfs 截图缓存
      */
     protected CompletableFuture<BufferTemp> mergePdfsToPDF(WkhtmlRenderBO renderBO, List<BufferTemp> pdfs) {
         if (pdfs.size() == 1) {

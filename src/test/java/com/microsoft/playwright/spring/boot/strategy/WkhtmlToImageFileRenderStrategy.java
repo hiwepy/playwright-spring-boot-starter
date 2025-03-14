@@ -54,7 +54,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
         if(renderBO.isAsync()){
             List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
-                    .map(urlTemp -> captureScreenshotAsync2(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
+                    .map(urlTemp -> captureScreenshotAsyncWithoutIsolated(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
                     .collect(Collectors.toList());
             CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             CompletableFuture<List<BufferTemp>> resultFuture = allFuture
@@ -86,9 +86,9 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshot
-     * @param quality
-     * @return
+     * @param screenshot 截图缓存
+     * @param quality 压缩质量
+     * @return 压缩后的截图缓存
      */
     @Override
     protected CompletableFuture<BufferTemp> compressScreenshot(BufferTemp screenshot, Integer quality) {
@@ -136,9 +136,9 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片合并为Zip方法
-     * @param rendeId
-     * @param screenshots
-     * @return
+     * @param rendeId 渲染ID
+     * @param screenshots 截图缓存
+     * @return 合并后的ZIP缓存
      */
     @Override
     protected CompletableFuture<BufferTemp> mergeScreenshotsToZip(String rendeId, List<BufferTemp> screenshots) {

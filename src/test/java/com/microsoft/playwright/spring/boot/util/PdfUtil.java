@@ -22,7 +22,6 @@ import java.util.*;
 @Slf4j
 public class PdfUtil {
 
-
     public static PDDocumentInformation information(WkhtmlRenderBO renderBO){
         PDDocumentInformation information = new PDDocumentInformation();
         information.setAuthor(StringUtils.defaultString(renderBO.getAuthor()));
@@ -42,6 +41,7 @@ public class PdfUtil {
     }
 
     public static void addPages(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots, PDDocument pdDocument) throws IOException {
+
         // 设置PDF属性
         pdDocument.setDocumentInformation(PdfUtil.information(renderBO));
         PDPageSize pdPageSize = PDPageSize.getByName(renderBO.getPageSize());

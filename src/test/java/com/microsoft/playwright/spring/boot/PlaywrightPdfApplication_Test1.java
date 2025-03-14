@@ -17,7 +17,6 @@ import org.springframework.util.Base64Utils;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +87,8 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         for (int i = 0; i < 100; i++) {
             try {
                 renderBO.setRanderId(Objects.toString(sequence.nextId()));
-                renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+                WkhtmlRenderResultVO resultVO = renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+                log.info("PDF生成成功: {}", resultVO);
             } catch (Exception e) {
                 log.error("pdf生成失败;", e);
             } finally {

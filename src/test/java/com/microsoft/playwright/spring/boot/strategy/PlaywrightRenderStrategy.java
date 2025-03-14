@@ -18,7 +18,7 @@ public interface PlaywrightRenderStrategy<B extends WkhtmlRenderBO> {
      * @param renderBO 渲染参数来源 BO
      */
     WkhtmlRenderResultVO render(B renderBO) throws Exception;
- 
+
     /**
      * 设置自定义判断方法
      * @param function 自定义判断方法
@@ -27,14 +27,14 @@ public interface PlaywrightRenderStrategy<B extends WkhtmlRenderBO> {
 
     /**
      * 清理临时文件
-     * @param renderBO
-     * @param resultBO
+     * @param renderBO 渲染参数来源 BO
+     * @param resultBO 渲染结果 BO
      */
     void cleanTemporary(B renderBO, WkhtmlRenderResultVO resultBO);
 
     /**
      * 处理类型
-     * @return
+     * @return 渲染类型
      */
     RenderType getRenderType();
 

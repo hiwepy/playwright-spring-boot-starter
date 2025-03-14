@@ -48,8 +48,8 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
 
     /**
      * 定义一个浏览器内容截图方法
-     * @param renderBO
-     * @return
+     * @param renderBO 渲染参数
+     * @return 截图缓存
      */
     protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
@@ -89,9 +89,9 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshots
-     * @param quality
-     * @return
+     * @param screenshots 截图缓存
+     * @param quality 压缩质量
+     * @return 压缩后的截图缓存
      */
     protected List<BufferTemp> compressScreenshots(List<BufferTemp> screenshots, Integer quality) {
         if((quality > MAX_QUALITY || quality < MIN_QUALITY)){
@@ -103,7 +103,7 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
                 .map(screenshot -> compressScreenshot(screenshot, quality))
                 .collect(Collectors.toList());
         // 2、使用CompletableFuture.allOf()方法，等待所有异步线程执行完毕
-        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+        CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
         CompletableFuture<List<BufferTemp>> resultFuture = allFuture
                 .thenApply(v -> futureList.stream().map(CompletableFuture::join).collect(Collectors.toList()));
         return resultFuture.join();
@@ -111,9 +111,9 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshot
-     * @param quality
-     * @return
+     * @param screenshot 截图缓存
+     * @param quality 压缩质量
+     * @return 压缩后的截图缓存
      */
     protected CompletableFuture<BufferTemp> compressScreenshot(BufferTemp screenshot, Integer quality) {
         // 判断压缩质量和压缩比例是否在范围内
@@ -155,11 +155,12 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
      * 默认编码，使用平台相关编码
      */
     private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
+
     /**
      * 定义一个图片合并为Zip方法
-     * @param rendeId
-     * @param screenshots
-     * @return
+     * @param rendeId 渲染ID
+     * @param screenshots 截图缓存
+     * @return 合并后的ZIP缓存
      */
     protected CompletableFuture<BufferTemp> mergeScreenshotsToZip(String rendeId, List<BufferTemp> screenshots) {
         if(screenshots.size() == 1){

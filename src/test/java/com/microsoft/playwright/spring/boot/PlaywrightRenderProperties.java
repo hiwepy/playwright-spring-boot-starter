@@ -21,6 +21,15 @@ public class PlaywrightRenderProperties {
 	protected boolean isolated;
 
 	/**
+	 * 是否运行重试生成
+	 */
+	private boolean retryAble;
+	/**
+	 * 重试生成次数
+	 */
+	protected Integer retryLimit = 3;
+
+	/**
 	 * 临时是否写入磁盘
 	 */
 	protected boolean writeToFile = true;
