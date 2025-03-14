@@ -56,14 +56,12 @@ public class WkhtmlToPdfMergerFileRenderStrategy extends WkhtmlToPdfMergerBuffer
                 return tempRtList.stream().filter(urlTemp -> Objects.nonNull(urlTemp.getBuffer())).collect(Collectors.toList());
             }
         }
-
     }
 
     /**
      * 定义一个图片合并为PDF方法
-     * @param renderBO
-     * @param pdfs
-     * @throws IOException
+     * @param renderBO 渲染参数
+     * @param pdfs pdf缓存
      */
     @Override
     protected CompletableFuture<BufferTemp> mergePdfsToPDF(WkhtmlRenderBO renderBO, List<BufferTemp> pdfs) {

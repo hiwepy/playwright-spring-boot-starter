@@ -41,10 +41,9 @@ public class WkhtmlToPdfBufferRenderStrategy extends WkhtmlToImageBufferRenderSt
     /**
      * 定义一个图片合并为PDF方法
      *
-     * @param renderBO
-     * @param screenshots
-     * @return
-     * @throws IOException
+     * @param renderBO  渲染参数
+     * @param screenshots 截图缓存
+     * @return PDF缓存
      */
     protected CompletableFuture<BufferTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots) {
         return CompletableFuture.supplyAsync(() -> {

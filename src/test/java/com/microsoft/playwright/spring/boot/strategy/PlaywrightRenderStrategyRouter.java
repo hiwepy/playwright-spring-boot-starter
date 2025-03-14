@@ -21,7 +21,6 @@ public class PlaywrightRenderStrategyRouter {
         this.strategyMap = playwrightRenderStrategyList.stream().collect(Collectors.toMap(PlaywrightRenderStrategy::getRenderType, strategy -> strategy));
     }
 
-
     public PlaywrightRenderStrategy route(RenderType type){
         return strategyMap.get(type);
     }

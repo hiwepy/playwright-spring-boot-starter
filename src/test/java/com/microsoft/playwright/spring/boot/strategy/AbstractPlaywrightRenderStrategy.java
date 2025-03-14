@@ -87,7 +87,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        // TODO Auto-generated method stub
+        log.info("AbstractPlaywrightRenderStrategy init");
     }
 
     /**
