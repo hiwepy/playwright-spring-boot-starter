@@ -195,9 +195,9 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      */
     protected final CompletableFuture<BufferTemp> captureScreenshotAsync(String rendeId, BufferTemp urlTemp, String selector){
         if(playwrightRenderProperties.isIsolated()){
-            return this.captureScreenshotAsyncOnIsolated(rendeId, urlTemp, selector);
+            return this.captureScreenshotAsyncWithIsolated(rendeId, urlTemp, selector);
         }
-        return this.captureScreenshotAsyncOffIsolated(rendeId, urlTemp, selector);
+        return this.captureScreenshotAsyncWithoutIsolated(rendeId, urlTemp, selector);
     }
 
     /**
@@ -207,7 +207,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @param selector 选择器
      * @return 截图
      */
-    protected CompletableFuture<BufferTemp> captureScreenshotAsyncOnIsolated(String rendeId, BufferTemp urlTemp, String selector){
+    protected CompletableFuture<BufferTemp> captureScreenshotAsyncWithIsolated(String rendeId, BufferTemp urlTemp, String selector){
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
@@ -254,7 +254,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @param selector 选择器
      * @return 截图
      */
-    protected CompletableFuture<BufferTemp> captureScreenshotAsyncOffIsolated(String rendeId, BufferTemp urlTemp, String selector){
+    protected CompletableFuture<BufferTemp> captureScreenshotAsyncWithoutIsolated(String rendeId, BufferTemp urlTemp, String selector){
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
             Page page = null;
@@ -349,12 +349,12 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         return true;
     }
 
-    protected BufferTemp loadPageWithCallback(Page page, BufferTemp urlTemp, BiFunction<Page, BufferTemp, BufferTemp> callback) throws Exception {
+    protected BufferTemp loadPageWithCallback(Page page, BufferTemp urlTemp, BiFunction<Page, BufferTemp, BufferTemp> callback) {
+
         urlTemp.setFileSize(0L);
         urlTemp.setNeedReload(false);
         urlTemp.setReload(false);
         urlTemp.setReloadTimeout(playwrightProperties.getPageNavigateOptions().getTimeout());
-
         page.onLoad(page1 -> {
             if(urlTemp.isReload()){
                 log.debug("Reload page for : {}", page1.url());
@@ -370,7 +370,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             }
         });
         page.onRequestFailed(request -> {
-            if( urlTemp.isReload()){
+            if(urlTemp.isReload()){
                 log.error("Reload Request failed: {}, resource type：{}, reason：{}", request.url(), request.resourceType(), request.failure());
             } else {
                 log.error("Request failed: {}, resource type：{}, reason：{}", request.url(), request.resourceType(), request.failure());
@@ -402,6 +402,10 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         // 设置页面加载参数, 并跳转到url
         Page.NavigateOptions navigateOptions = playwrightProperties.getPageNavigateOptions().toOptions();
         page.navigate(urlTemp.getUrl(), navigateOptions);
+        // 等待页面加载完成
+        //page.waitForLoadState(playwrightProperties.getPageNavigateOptions().getWaitUntil());
+        // 等待页面请求完成
+        //page.waitForRequestFinished()
         // 如果设置了加载等待时间，则等待一段时间
         if(playwrightRenderProperties.isLoadWait() && Objects.nonNull(playwrightRenderProperties.getLoadWaitDuration()) && playwrightRenderProperties.getLoadWaitDuration().toMillis() > 0){
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
