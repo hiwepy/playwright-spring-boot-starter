@@ -42,11 +42,11 @@ public class BufferTemp {
     /**
      * 是否需要重新加载
      */
-    private boolean needReload;
+    private Boolean needReload;
     /**
      * 当前是否是在重新加载
      */
-    private boolean reload;
+    private Boolean reload;
     /**
      * 重新超时时间（初次使用全局配置，重试会计算新的超时时间）
      */
@@ -59,6 +59,14 @@ public class BufferTemp {
                .buffer(temp.getBuffer())
                .name(temp.getName());
    }
+
+    public boolean isReload() {
+        return reload != null && reload;
+    }
+
+    public boolean isNeedReload() {
+        return needReload != null && needReload;
+    }
 
 }
 
