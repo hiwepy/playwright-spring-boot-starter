@@ -86,6 +86,10 @@ public class PlaywrightProperties {
 	 */
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
 	/**
+	 * Page Wait For Selector Options
+	 */
+	private PageWaitForSelectorOptions pageWaitForSelectorOptions = new PageWaitForSelectorOptions();
+	/**
 	 * Page Element Screenshot Options
 	 */
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
