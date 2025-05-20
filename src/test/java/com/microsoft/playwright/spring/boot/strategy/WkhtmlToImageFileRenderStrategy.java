@@ -54,7 +54,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
         log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
         if(renderBO.isAsync()){
             List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
-                    .map(urlTemp -> captureScreenshotAsyncWithoutIsolated(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
+                    .map(urlTemp -> captureScreenshotAsync(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
                     .collect(Collectors.toList());
             CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
             CompletableFuture<List<BufferTemp>> resultFuture = allFuture

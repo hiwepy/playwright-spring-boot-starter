@@ -12,7 +12,6 @@ import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.enums.ResourceType;
 import com.microsoft.playwright.spring.boot.monitor.MemoryMonitor;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePool;
 import com.microsoft.playwright.spring.boot.util.ImageUtil;
 import com.microsoft.playwright.spring.boot.util.TimeUtil;
 import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
@@ -65,8 +64,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
     protected PlaywrightProperties playwrightProperties;
     @Autowired
     protected PlaywrightRenderProperties playwrightRenderProperties;
-    @Autowired
-    protected BrowserPagePool browserPagePool;
     @Autowired
     protected BrowserContextPool browserContextPool;
     @Autowired
@@ -203,20 +200,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @return 截图
      */
     protected final CompletableFuture<BufferTemp> captureScreenshotAsync(String rendeId, BufferTemp urlTemp, String selector){
-        if(playwrightRenderProperties.isIsolated()){
-            return this.captureScreenshotAsyncWithIsolated(rendeId, urlTemp, selector);
-        }
-        return this.captureScreenshotAsyncWithoutIsolated(rendeId, urlTemp, selector);
-    }
-
-    /**
-     * 异步截图
-     * @param rendeId 渲染ID
-     * @param urlTemp url信息
-     * @param selector 选择器
-     * @return 截图
-     */
-    protected CompletableFuture<BufferTemp> captureScreenshotAsyncWithIsolated(String rendeId, BufferTemp urlTemp, String selector){
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
@@ -251,46 +234,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             } finally {
                 if(Objects.nonNull(browserContext)){
                     browserContextPool.returnObject(browserContext);
-                }
-            }
-        }, dtpToImageExecutor);
-    }
-
-    /**
-     * 异步截图
-     * @param rendeId 渲染ID
-     * @param urlTemp url信息
-     * @param selector 选择器
-     * @return 截图
-     */
-    protected CompletableFuture<BufferTemp> captureScreenshotAsyncWithoutIsolated(String rendeId, BufferTemp urlTemp, String selector){
-        // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
-        return CompletableFuture.supplyAsync(() -> {
-            Page page = null;
-            try  {
-                page = browserPagePool.borrowObject();
-                // 跳转到url
-                log.info("Sync Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-                BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
-                log.info("Sync Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                // 如果许重新截图，则重试截图
-                // AtomicInteger screenshotRetry = new AtomicInteger(0);
-                // 如果截图文件大小小于指定大小，则重试截图
-                /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
-                    log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-                    pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
-                    log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                }*/
-                return pageScreenshot;
-            } catch (Exception e) {
-                log.error("Sync Capture screenshot error: ", e);
-                if(e instanceof PlaywrightException){
-                    throw ExceptionUtils.throwableOfType(e, PlaywrightException.class);
-                }
-                throw new PlaywrightException("Sync Capture screenshot error", e);
-            } finally {
-                if(Objects.nonNull(page)){
-                    browserPagePool.returnObject(page);
                 }
             }
         }, dtpToImageExecutor);
@@ -544,13 +487,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
      * @return 截图
      */
     protected final CompletableFuture<BufferTemp> pageToPdfFutureAsync(String rendeId, BufferTemp urlTemp) {
-        if(playwrightRenderProperties.isIsolated()){
-            return this.pageToPdfFutureAsync1(rendeId, urlTemp);
-        }
-        return this.pageToPdfFutureAsync2(rendeId, urlTemp);
-    }
-
-    protected CompletableFuture<BufferTemp> pageToPdfFutureAsync1(String rendeId, BufferTemp urlTemp) {
         if(StringUtils.isBlank(urlTemp.getUrl())){
             return CompletableFuture.completedFuture(urlTemp);
         }
@@ -582,40 +518,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             } finally {
                 if(Objects.nonNull(browserContext)){
                     browserContextPool.returnObject(browserContext);
-                }
-            }
-        }, dtpToPdfExecutor);
-    }
-
-    /**
-     * 异步截图
-     * @param rendeId 渲染ID
-     * @param urlTemp url信息
-     * @return 截图
-     */
-    protected CompletableFuture<BufferTemp> pageToPdfFutureAsync2(String rendeId, BufferTemp urlTemp) {
-        if(StringUtils.isBlank(urlTemp.getUrl())){
-            return CompletableFuture.completedFuture(urlTemp);
-        }
-        //HttpServletRequest request = WebUtils.getHttpServletRequest();
-        // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
-        return CompletableFuture.supplyAsync(() -> {
-            Page page = null;
-            try  {
-                page = browserPagePool.borrowObject();
-                log.info("Async Generate pdf start for rendeId: {}, url : {}", rendeId, urlTemp.getUrl());
-                BufferTemp pageToPdf = this.loadPageWithCallback(page, urlTemp, this.doPageToPdf(rendeId));
-                log.info("Async Generate pdf completed for rendeId: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, urlTemp.getUrl(), pageToPdf.getName(), pageToPdf.getFileSize()/ONE_KB);
-                return pageToPdf;
-            } catch (Exception e) {
-                log.error("Async Generate pdf error: ", e);
-                if(e instanceof PlaywrightException){
-                    throw ExceptionUtils.throwableOfType(e, PlaywrightException.class);
-                }
-                throw new PlaywrightException("Async Generate pdf error", e);
-            } finally {
-                if(Objects.nonNull(page)){
-                    browserPagePool.returnObject(page);
                 }
             }
         }, dtpToPdfExecutor);
