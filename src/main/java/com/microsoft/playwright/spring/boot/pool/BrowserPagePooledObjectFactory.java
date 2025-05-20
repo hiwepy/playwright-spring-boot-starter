@@ -11,6 +11,8 @@ import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.beans.factory.DisposableBean;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +92,14 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
         log.info("Create Browser Instance .");
         BrowserType browserType = browserTypeEnum.getBrowserType(playwright);
         Browser browser = browserType.launch(launchOptions);
+
+
+        // Get Browser Launch Options
+        BrowserType.LaunchPersistentContextOptions launchPersistentContextOptions = Objects.nonNull(playwrightProperties.getLaunchPersistentContextOptions()) ?
+                playwrightProperties.getLaunchPersistentContextOptions().toOptions() : new BrowserType.LaunchPersistentContextOptions().setHeadless(true);
+        Path userDataDir = Paths.get("");
+        browserType.launchPersistentContext(userDataDir, launchPersistentContextOptions);
+
         browser.onDisconnected((b) -> {
             log.error("Browser disconnected: {}", b);
             Playwright playwright2 = PLAYWRIGHT_MAP.remove(b);

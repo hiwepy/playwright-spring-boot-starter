@@ -33,11 +33,11 @@ public class BrowserNewContextOptions {
      * {@code http://localhost:3000/bar.html}</li>
      * </ul>
      */
-    public String baseURL;
+    public String baseUrl;
     /**
      * Toggles bypassing page's Content-Security-Policy.
      */
-    public Boolean bypassCSP;
+    public Boolean bypassCsp;
     /**
      * Emulates {@code "prefers-colors-scheme"} media feature, supported values are {@code "light"}, {@code "dark"}, {@code
      * "no-preference"}. See {@link Page#emulateMedia Page.emulateMedia()} for more details. Passing {@code null} resets
@@ -204,8 +204,8 @@ public class BrowserNewContextOptions {
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Browser.NewContextOptions options = new Browser.NewContextOptions();
         map.from(this.getAcceptDownloads()).whenNonNull().to(options::setAcceptDownloads);
-        map.from(this.getBaseURL()).whenHasText().to(options::setBaseURL);
-        map.from(this.getBypassCSP()).whenNonNull().to(options::setBypassCSP);
+        map.from(this.getBaseUrl()).whenHasText().to(options::setBaseURL);
+        map.from(this.getBypassCsp()).whenNonNull().to(options::setBypassCSP);
         map.from(this.getColorScheme()).to(options::setColorScheme);
         map.from(this.getDeviceScaleFactor()).whenNonNull().to(options::setDeviceScaleFactor);
         map.from(this.getExtraHttpHeaders()).whenNonNull().to(options::setExtraHTTPHeaders);

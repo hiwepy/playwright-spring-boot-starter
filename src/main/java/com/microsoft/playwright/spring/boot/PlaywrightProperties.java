@@ -75,6 +75,11 @@ public class PlaywrightProperties {
 	@NestedConfigurationProperty
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
 	/**
+	 * Launch Persistent Context Options
+	 */
+	@NestedConfigurationProperty
+	private BrowserLaunchPersistentContextOptions launchPersistentContextOptions = new BrowserLaunchPersistentContextOptions();
+	/**
 	 * New Context Options
 	 */
 	@NestedConfigurationProperty
