@@ -1,9 +1,10 @@
 package com.microsoft.playwright.spring.boot.pool;
 
-import com.alibaba.ttl.TransmittableThreadLocal;
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
@@ -33,6 +34,16 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
     @Override
     public void activateObject(PooledObject<Page> p) throws Exception {
         Page page = p.getObject();
+        if (Objects.isNull(page)) {
+            log.warn("Activate Browser Page Instance Error, Page is null.");
+            return;
+        }
+        if (page.isClosed()) {
+            log.warn("Activate Browser Page Instance Error, Page is already closed.");
+            return;
+        }
+        // 设置默认页面为 about:blank
+        page.navigate("about:blank");
         log.info("Activate Browser Page Instance '{}'.", page);
     }
 
@@ -53,9 +64,6 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
             log.warn("Destroy Browser Page Instance Error, Page is already closed.");
             return;
         }
-
-
-
         try {
             log.info("Destroy Browser Page Instance '{}'.", page);
             page.close();
@@ -91,7 +99,7 @@ public class BrowserPagePooledObjectFactory implements PooledObjectFactory<Page>
             }
         });
         log.info("Create Browser Instance {} Success.", browser);
-        // Create Browser Page
+        // 在新的浏览器上下文中创建新页面。关闭此页面也将关闭上下文。
         Page page;
         if(Objects.nonNull(playwrightProperties.getNewPageOptions())){
             Browser.NewPageOptions newPageOptions = playwrightProperties.getNewPageOptions().toOptions();
