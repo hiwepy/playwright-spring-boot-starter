@@ -22,6 +22,7 @@ import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
 import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.util.function.Function;
 
@@ -56,46 +57,57 @@ public class PlaywrightProperties {
     /**
      * Browser Page Pool Config
      */
+	@NestedConfigurationProperty
     private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
+	@NestedConfigurationProperty
 	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserConnectOptions connectOptions = new BrowserConnectOptions();
 	/**
 	 * Launch Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
 	/**
 	 * New Context Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
 	/**
 	 * New Page Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */
+	@NestedConfigurationProperty
 	private PageNavigateOptions pageNavigateOptions = new PageNavigateOptions();
 	/**
 	 * Page Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
 	/**
 	 * Page Wait For Selector Options
 	 */
+	@NestedConfigurationProperty
 	private PageWaitForSelectorOptions pageWaitForSelectorOptions = new PageWaitForSelectorOptions();
 	/**
 	 * Page Element Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
 	/**
 	 * Page Pdf Options
 	 */
+	@NestedConfigurationProperty
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
     public enum BrowserTypeEnum {

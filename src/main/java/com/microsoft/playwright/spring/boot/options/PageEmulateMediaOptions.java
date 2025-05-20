@@ -6,10 +6,8 @@ import com.microsoft.playwright.options.ForcedColors;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.options.ReducedMotion;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
-@Accessors(chain = true)
 @Data
 public class PageEmulateMediaOptions {
 

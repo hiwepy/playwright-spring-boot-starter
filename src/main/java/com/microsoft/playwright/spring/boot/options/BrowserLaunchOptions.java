@@ -3,7 +3,6 @@ package com.microsoft.playwright.spring.boot.options;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.options.Proxy;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.util.CollectionUtils;
 
@@ -11,7 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-@Accessors(chain = true)
 @Data
 public class BrowserLaunchOptions {
 
@@ -97,7 +95,7 @@ public class BrowserLaunchOptions {
      * Maximum time in milliseconds to wait for the browser instance to start. Defaults to {@code 30000} (30 seconds). Pass
      * {@code 0} to disable timeout.
      */
-    public Double timeout;
+    public Double timeout = 30 * 1000.0;
     /**
      * If specified, traces are saved into this directory.
      */

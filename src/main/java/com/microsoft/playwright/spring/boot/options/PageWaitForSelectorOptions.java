@@ -4,12 +4,8 @@ package com.microsoft.playwright.spring.boot.options;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
-import java.time.Duration;
-
-@Accessors(chain = true)
 @Data
 public class PageWaitForSelectorOptions {
 
@@ -36,7 +32,7 @@ public class PageWaitForSelectorOptions {
      * BrowserContext.setDefaultTimeout()} or {@link com.microsoft.playwright.Page#setDefaultTimeout Page.setDefaultTimeout()}
      * methods.
      */
-    public Double timeout = 30000D;
+    public Double timeout = 30 * 1000.0;
 
     public Page.WaitForSelectorOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
