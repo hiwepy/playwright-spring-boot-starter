@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
+import java.time.Duration;
+
 @Accessors(chain = true)
 @Data
 public class PageWaitForSelectorOptions {
@@ -22,7 +24,7 @@ public class PageWaitForSelectorOptions {
      * visibility:hidden}. This is opposite to the {@code "visible"} option.</li>
      * </ul>
      */
-    public WaitForSelectorState state;
+    public WaitForSelectorState state = WaitForSelectorState.ATTACHED;
     /**
      * When true, the call requires selector to resolve to a single element. If given selector resolves to more than one
      * element, the call throws an exception.
@@ -34,7 +36,7 @@ public class PageWaitForSelectorOptions {
      * BrowserContext.setDefaultTimeout()} or {@link com.microsoft.playwright.Page#setDefaultTimeout Page.setDefaultTimeout()}
      * methods.
      */
-    public Double timeout;
+    public Double timeout = 30000D;
 
     public Page.WaitForSelectorOptions toOptions(){
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
