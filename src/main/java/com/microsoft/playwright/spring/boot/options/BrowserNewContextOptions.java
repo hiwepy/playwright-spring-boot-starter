@@ -14,6 +14,28 @@ import java.util.Map;
 
 @Data
 public class BrowserNewContextOptions {
+
+    public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+    public static final long DEFAULT_RETRY_DELAY_MS = 1000;
+    public static final long DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS = 30 * 1000;
+
+    /**
+     * Maximum number of retry attempts to create a new context. If the limit is reached, the oldest context will be closed.
+     * Defaults 3
+     */
+    public Integer maximumRetryAttempts = DEFAULT_MAX_RETRY_ATTEMPTS;
+
+    /**
+     * Maximum time to wait for the retry delay. If the limit is reached, the oldest context will be closed. Defaults 1 second
+     */
+    public Long maximumRetryDelayMs = DEFAULT_RETRY_DELAY_MS;
+
+    /**
+     * Maximum time to wait for the resource cleanup. If the limit is reached, the oldest context will be closed. Defaults 30
+     * seconds
+     */
+    public Long maximumResourceCleanupTimeoutMs = DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS;
+
     /**
      * Whether to automatically download all the attachments. Defaults to {@code true} where all the downloads are accepted.
      */

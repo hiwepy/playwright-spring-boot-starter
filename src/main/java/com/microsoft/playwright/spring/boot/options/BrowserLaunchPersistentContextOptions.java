@@ -17,6 +17,13 @@ import java.util.Map;
 @Data
 public class BrowserLaunchPersistentContextOptions {
 
+    public static final long DEFAULT_DIR_USAGE_TIMEOUT = 30 * 60 * 1000; // 30分钟
+    public static final long DEFAULT_MAX_DIR_SIZE = 200 * 1024 * 1024; // 200MB
+    public static final int DEFAULT_MAX_CONTEXT_SIZE = 16;
+    public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+    public static final long DEFAULT_RETRY_DELAY_MS = 1000;
+    public static final long DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS = 30 * 1000;
+
     /**
      * Path to a User Data Directory, which stores browser session data like cookies and local storage. More details for <a
      * href="https://chromium.googlesource.com/chromium/src/+/master/docs/user_data_dir.md#introduction">Chromium</a> and <a
@@ -25,6 +32,39 @@ public class BrowserLaunchPersistentContextOptions {
      * an empty string to use a temporary directory instead.
      */
     public String userDataDir = "/tmp/playwright/";
+
+    /**
+     * Maximum number of browser contexts to be created. If the limit is reached, the oldest context will be closed. Defaults 16
+     */
+    public Integer maximumContentSize = DEFAULT_MAX_CONTEXT_SIZE;
+
+    /**
+     * Maximum size of the user data directory. If the limit is reached, the oldest context will be closed. Defaults 200MB
+     */
+    public Long maximumDirSize = DEFAULT_MAX_DIR_SIZE;
+
+    /**
+     * Maximum time to wait for the user data directory to be used. If the limit is reached, the oldest context will be closed.
+     * Defaults 30 minutes
+     */
+    public Long maximumDirUsageTimeout = DEFAULT_DIR_USAGE_TIMEOUT;
+
+    /**
+     * Maximum number of retry attempts to create a new context. If the limit is reached, the oldest context will be closed.
+     * Defaults 3
+     */
+    public Integer maximumRetryAttempts = DEFAULT_MAX_RETRY_ATTEMPTS;
+
+    /**
+     * Maximum time to wait for the retry delay. If the limit is reached, the oldest context will be closed. Defaults 1 second
+     */
+    public Long maximumRetryDelayMs = DEFAULT_RETRY_DELAY_MS;
+
+    /**
+     * Maximum time to wait for the resource cleanup. If the limit is reached, the oldest context will be closed. Defaults 30
+     * seconds
+     */
+    public Long maximumResourceCleanupTimeoutMs = DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS;
 
     /**
      * Whether to automatically download all the attachments. Defaults to {@code true} where all the downloads are accepted.
