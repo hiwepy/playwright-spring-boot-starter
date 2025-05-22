@@ -112,8 +112,12 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     public void activateObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
         log.info("Activate BrowserContext Instance '{}'.", browserContext);
-        if(Objects.nonNull(browserContext)){
-            browserContext.clearCookies();
+        if (Objects.nonNull(browserContext) && browserContext.browser() != null && browserContext.browser().isConnected()) {
+            try {
+                browserContext.clearCookies();
+            } catch (Exception e) {
+                log.warn("Failed to clear cookies, browser context might be closed", e);
+            }
         }
     }
 
@@ -360,66 +364,34 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
     public void passivateObject(PooledObject<BrowserContext> p) throws Exception {
         BrowserContext browserContext = p.getObject();
         log.info("Return BrowserContext Instance '{}'.", browserContext);
-        if(Objects.nonNull(browserContext)){
+        
+        if (Objects.nonNull(browserContext) && browserContext.browser() != null && browserContext.browser().isConnected()) {
             try {
-                // 1. 清除 cookies
-                browserContext.clearCookies();
+                // 1. 先关闭所有页面
+                browserContext.pages().forEach(PlaywrightUtil::closePage);
                 
-                // 2. 清除 localStorage
+                // 2. 然后清理数据
+                try {
+                    browserContext.clearCookies();
+                } catch (Exception e) {
+                    log.warn("Failed to clear cookies");
+                }
+                
+                // 3. 清理其他存储
                 browserContext.pages().forEach(page -> {
                     try {
                         page.evaluate("() => window.localStorage.clear()");
-                    } catch (Exception e) {
-                        log.warn("Failed to clear localStorage");
-                    }
-                });
-                
-                // 3. 清除 sessionStorage
-                browserContext.pages().forEach(page -> {
-                    try {
                         page.evaluate("() => window.sessionStorage.clear()");
-                    } catch (Exception e) {
-                        log.warn("Failed to clear sessionStorage");
-                    }
-                });
-                
-                // 4. 清除 IndexedDB
-                browserContext.pages().forEach(page -> {
-                    try {
                         page.evaluate("() => { " +
                                 "const databases = window.indexedDB.databases(); " +
                                 "databases.then(dbs => dbs.forEach(db => window.indexedDB.deleteDatabase(db.name))); " +
                                 "}");
                     } catch (Exception e) {
-                        log.warn("Failed to clear IndexedDB");
+                        log.warn("Failed to clear storage");
                     }
                 });
                 
-                // 5. 清除 WebSQL
-                browserContext.pages().forEach(page -> {
-                    try {
-                        page.evaluate("() => { " +
-                                "if (window.openDatabase) { " +
-                                "  const databases = window.openDatabase('', '', '', 0); " +
-                                "  databases.transaction(tx => { " +
-                                "    tx.executeSql('SELECT name FROM sqlite_master WHERE type=\"table\"', [], (tx, result) => { " +
-                                "      for (let i = 0; i < result.rows.length; i++) { " +
-                                "        const tableName = result.rows.item(i).name; " +
-                                "        tx.executeSql('DROP TABLE IF EXISTS ' + tableName); " +
-                                "      } " +
-                                "    }); " +
-                                "  }); " +
-                                "} " +
-                                "}");
-                    } catch (Exception e) {
-                        log.warn("Failed to clear WebSQL");
-                    }
-                });
-                
-                // 6. 关闭所有页面
-                browserContext.pages().forEach(PlaywrightUtil::closePage);
-                
-                // 7. 更新目录大小
+                // 4. 更新目录大小
                 Path contextDir = CONTEXT_DIR_MAP.get(browserContext);
                 if (contextDir != null) {
                     updateDirectorySize(contextDir);
@@ -459,7 +431,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                         try {
                             PlaywrightUtil.cleanupBrowserContext(browserContext);
                         } catch (Exception e) {
-                            log.warn("Error cleaning up browser context, continuing with cleanup", e);
+                            log.warn("Error cleaning up browser context, continuing with cleanup");
                         }
 
                         // 2. 关闭上下文
@@ -468,7 +440,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                                 browserContext.close();
                             }
                         } catch (Exception e) {
-                            log.warn("Error closing browser context, continuing with cleanup", e);
+                            log.warn("Error closing browser context, continuing with cleanup");
                         }
 
                         // 3. 清理 Playwright 实例
@@ -478,7 +450,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                                 playwright.close();
                                 log.info("Cleaned up Playwright instance in destroyObject");
                             } catch (Exception e) {
-                                log.warn("Error closing Playwright instance, continuing with cleanup", e);
+                                log.warn("Error closing Playwright instance, continuing with cleanup");
                             }
                         }
 
@@ -491,7 +463,7 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                                 FileUtils.deleteDirectory(contextDir.toFile());
                                 log.info("Cleaned up Playwright context directory in destroyObject");
                             } catch (Exception e) {
-                                log.error("Error cleaning up Playwright context directory", e);
+                                log.error("Error cleaning up Playwright context directory");
                                 // 不抛出异常，继续清理
                             }
                         }
@@ -521,7 +493,6 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
         // 所有重试都失败
         log.error("Failed to cleanup resources after {} attempts", this.getMaximumRetryAttempts(), lastException);
-        throw lastException;
     }
 
     @Override

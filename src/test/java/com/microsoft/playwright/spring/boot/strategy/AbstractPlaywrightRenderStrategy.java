@@ -206,27 +206,18 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
         //HttpServletRequest request = WebUtils.getHttpServletRequest();
         // 1、使用CompletableFuture.supplyAsync()方法，异步执行截图
         return CompletableFuture.supplyAsync(() -> {
-            // Page page = null;
             BrowserContext browserContext = null;
             try {
+                // 从对象池中获取浏览器上下文
                 browserContext = browserContextPool.borrowObject();
+                // 创建新的页面
                 try(Page page = browserContext.newPage()) {
-                    // 跳转到url
                     log.info("Async Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
                     BufferTemp pageScreenshot = this.loadPageWithCallback(page, urlTemp, this.doPageScreenShot(rendeId, selector));
                     log.info("Async Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                    // 如果许重新截图，则重试截图
-                    // AtomicInteger screenshotRetry = new AtomicInteger(0);
-                    // 如果截图文件大小小于指定大小，则重试截图
-                    /*while ( urlTemp.getFileSize() < lowerLimit && screenshotRetry.incrementAndGet() < playwrightRenderProperties.getRetryLimit()) {
-                        log.info("Retry Capturing screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, urlTemp.getUrl());
-                        pageScreenshot = doPageScreenShot(rendeId, urlTemp, selector);
-                        log.info("Retry Capturing screenshot completed for rendeId: {}, selector: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, selector, urlTemp.getUrl(), pageScreenshot.getName(), pageScreenshot.getFileSize()/ONE_KB);
-                    }*/
                     return pageScreenshot;
                 }
             } catch (Exception e) {
-                log.error("Async Capture screenshot error: ", e);
                 if(e instanceof PlaywrightException){
                     throw ExceptionUtils.throwableOfType(e, PlaywrightException.class);
                 }
