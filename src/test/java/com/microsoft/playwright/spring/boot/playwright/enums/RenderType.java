@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.enums;
+package com.microsoft.playwright.spring.boot.playwright.enums;
 
 public enum RenderType {
 

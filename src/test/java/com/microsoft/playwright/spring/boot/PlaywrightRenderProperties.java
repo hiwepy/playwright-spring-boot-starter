@@ -1,7 +1,3 @@
-/**
- * Copyright (C) 2022 杭州天音计算机系统工程有限公司
- * All Rights Reserved.
- */
 package com.microsoft.playwright.spring.boot;
 
 import lombok.Data;
@@ -13,7 +9,7 @@ import java.time.Duration;
 @Data
 public class PlaywrightRenderProperties {
 
-	public static final String PREFIX = "playwright.render";
+	public static final String PREFIX = "playwright.page-render-options";
 
 	/**
 	 * 浏览器会话是否隔离
@@ -21,13 +17,9 @@ public class PlaywrightRenderProperties {
 	protected boolean isolated;
 
 	/**
-	 * 是否运行重试生成
+	 * 页面加载完成状态标记元素的选择器（前后端协商后确定的页面就绪的判断标识）
 	 */
-	private boolean retryAble;
-	/**
-	 * 重试生成次数
-	 */
-	protected Integer retryLimit = 3;
+	private String waitForSelector;
 
 	/**
 	 * 临时是否写入磁盘
@@ -77,5 +69,20 @@ public class PlaywrightRenderProperties {
 	 * 截图大小，判定截图失败(kb)
 	 */
 	protected Long lowerLimit = 100L;
+
+	/**
+	 * 缓存配置
+	 */
+	protected RenderCache cache = new RenderCache();
+
+	@Data
+	public static class RenderCache {
+
+		protected Duration expireAfterWrite = Duration.ofSeconds(3);
+		protected int initialCapacity = 3;
+		protected int maximumSize = 10;
+
+	}
+
 
 }

@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.bo;
+package com.microsoft.playwright.spring.boot.playwright.bo;
 
 import lombok.Data;
 
@@ -14,9 +14,9 @@ public class WkhtmlRenderBO implements Serializable {
     /**
      * 渲染任务Id
      */
-    private String randerId;
+    private String taskId;
     /**
-     * 选择器
+     * 截图元素的选择器，没设置，则对整个页面进行截图
      */
     private String selector;
     /**
@@ -38,7 +38,7 @@ public class WkhtmlRenderBO implements Serializable {
     /**
      * 待渲染为为 PDF 和各种图像格式的 HTML URL 访问地址;多个使用,分割
      */
-    private List<BufferTemp> urls;
+    private List<PageScreenshotTemp> urls;
     /**
      * PDF 作者
      */
@@ -67,4 +67,17 @@ public class WkhtmlRenderBO implements Serializable {
      * 是否异步处理每页截图/生成PDF
      */
     private boolean async = true;
+    /**
+     * 是否跳过失败的页面
+     */
+    private boolean skipFail;
+    /**
+     * 判断页面截图最大单色占比
+     */
+    private float maxSingleColorPercent = 0.95f;
+    /**
+     * 判断页面截图和背景图片是一样的最大相似度
+     */
+    private float maxSimilarity = 0.75f;
+
 }

@@ -1,14 +1,13 @@
-package com.microsoft.playwright.spring.boot.strategy;
+package com.microsoft.playwright.spring.boot.playwright.strategy;
 
-import com.microsoft.playwright.spring.boot.bo.BufferTemp;
-import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.enums.RenderType;
-import com.microsoft.playwright.spring.boot.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.util.PdfUtil;
-import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
+import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
+import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
+import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
+import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
+import com.microsoft.playwright.spring.boot.playwright.util.PdfUtil;
+import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +16,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Playwright 渲染引擎将 HTML 渲染为 PDF 和各种图像格式
+ * @author wandl
  */
 @Slf4j
-@Component
 public class WkhtmlToPdfFileRenderStrategy extends WkhtmlToImageFileRenderStrategy {
 
     @Override
@@ -28,7 +27,7 @@ public class WkhtmlToPdfFileRenderStrategy extends WkhtmlToImageFileRenderStrate
     }
 
     @Override
-    public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots) throws IOException {
+    public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) throws IOException {
         WkhtmlRenderResultVO resultBO = new WkhtmlRenderResultVO();
         mergeScreenshotsToPDF(renderBO, screenshots).thenAccept(bufferTemp -> {
             resultBO.setFileName(bufferTemp.getName());
@@ -39,22 +38,27 @@ public class WkhtmlToPdfFileRenderStrategy extends WkhtmlToImageFileRenderStrate
 
     /**
      * 定义一个图片合并为PDF方法
-     * @param renderBO 渲染参数
-     * @param screenshots 截图缓存
-     * @return PDF缓存
+     * @param renderBO
+     * @param screenshots
+     * @return
+     * @throws IOException
      */
-    protected CompletableFuture<BufferTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots) {
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
         return CompletableFuture.supplyAsync(() -> {
-            String pdfFileName = "document_" + renderBO.getRanderId() + ".pdf";
+            String pdfFileName = "document_" + renderBO.getTaskId() + ".pdf";
             log.info("Merging screenshots to PDF: {}", pdfFileName);
             File pdfFile = new File(playwrightRenderProperties.getTmpDir(), pdfFileName);
             // 请求数+1
             // 创建空白文档
             try (PDDocument pdDocument = new PDDocument()) {
-                PdfUtil.addPages(renderBO, screenshots, pdDocument);
+                PdfUtil.addPages(renderBO, screenshots, pdDocument,
+                        this.getPageScreenshotCheckers(),
+                        renderBO.isSkipFail(),
+                        renderBO.getMaxSingleColorPercent(),
+                        renderBO.getMaxSimilarity());
                 // 保存文档到文件
                 pdDocument.save(pdfFile);
-                return BufferTemp.builder().index(0).name(pdfFileName).path(pdfFile.getAbsolutePath()).build();
+                return new PageScreenshotTemp().setIndex(0).setName(pdfFileName).setPath(pdfFile.getAbsolutePath());
             } catch (Exception e) {
                 throw new TaskRuntimeException("Failed to marge PDF File : " + pdfFileName, e);
             }

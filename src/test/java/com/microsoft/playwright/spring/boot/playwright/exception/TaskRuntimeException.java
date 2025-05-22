@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.exception;
+package com.microsoft.playwright.spring.boot.playwright.exception;
 
 
 

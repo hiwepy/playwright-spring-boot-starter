@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.enums;
+package com.microsoft.playwright.spring.boot.playwright.enums;
 
 /**
  * 渲染引擎所感知的请求的资源类型。ResourceType将是以下之一：

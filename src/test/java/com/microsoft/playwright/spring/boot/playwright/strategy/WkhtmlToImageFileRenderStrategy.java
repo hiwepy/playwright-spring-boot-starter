@@ -1,14 +1,11 @@
-package com.microsoft.playwright.spring.boot.strategy;
+package com.microsoft.playwright.spring.boot.playwright.strategy;
 
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.spring.boot.bo.BufferTemp;
-import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.enums.RenderType;
-import com.microsoft.playwright.spring.boot.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.utils.PlaywrightUtil;
-import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
+import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
+import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
+import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
+import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
+import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.exec.CommandLine;
@@ -16,15 +13,12 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -33,9 +27,9 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * 使用 Playwright 渲染引擎将 HTML 渲染为各种图像格式
+ * @author wandl
  */
 @Slf4j
-@Component
 public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderStrategy {
 
     @Override
@@ -44,36 +38,17 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
     }
 
     @Override
-    protected List<BufferTemp> doGenerate(WkhtmlRenderBO renderBO) throws IOException {
-        // 2、生成截图
-        return this.captureScreenshots(renderBO);
-    }
-
-    @Override
-    protected List<BufferTemp> captureScreenshots(WkhtmlRenderBO renderBO) {
-        log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(BufferTemp::getUrl).collect(Collectors.toList()));
+    protected List<PageScreenshotTemp> doGenerate(WkhtmlRenderBO renderBO) throws IOException {
+        log.info("Capturing screenshots for urls: {}", renderBO.getUrls().stream().map(PageScreenshotTemp::getUrl).collect(Collectors.toList()));
         if(renderBO.isAsync()){
-            List<CompletableFuture<BufferTemp>> futureList = renderBO.getUrls().stream()
-                    .map(urlTemp -> captureScreenshotAsync(renderBO.getRanderId(), urlTemp, renderBO.getSelector()))
-                    .collect(Collectors.toList());
-            CompletableFuture<Void> allFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
-            CompletableFuture<List<BufferTemp>> resultFuture = allFuture
-                    .thenApply(v -> futureList.stream().map(CompletableFuture::join).filter(urlTemp -> StringUtils.isNotBlank(urlTemp.getPath())).collect(Collectors.toList()));
-            return resultFuture.join();
+            return this.captureScreenshotAsync(renderBO);
         } else {
-            Playwright playwright = PlaywrightUtil.getInstance();
-            try(Browser browser = PlaywrightUtil.getBrowser(playwright, playwrightProperties)) {
-                List<BufferTemp> futureList = new ArrayList<>();
-                for (BufferTemp urlTemp : renderBO.getUrls()) {
-                    futureList.add(captureScreenshotSync(browser, renderBO.getRanderId(), urlTemp, renderBO.getSelector()));
-                }
-                return futureList.stream().filter(urlTemp -> StringUtils.isNotBlank(urlTemp.getPath())).collect(Collectors.toList());
-            }
+            return this.captureScreenshotSync(renderBO);
         }
     }
 
     @Override
-    protected List<BufferTemp> doCompress(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots) {
+    protected List<PageScreenshotTemp> doCompress(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
         // 1、获取压缩质量，如果压缩质量不在范围内，则不压缩
         Integer quality = renderBO.getQuality();
         if((quality > MAX_QUALITY || quality <= MIN_QUALITY)){
@@ -86,12 +61,12 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshot 截图缓存
-     * @param quality 压缩质量
-     * @return 压缩后的截图缓存
+     * @param screenshot
+     * @param quality
+     * @return
      */
     @Override
-    protected CompletableFuture<BufferTemp> compressScreenshot(BufferTemp screenshot, Integer quality) {
+    protected CompletableFuture<PageScreenshotTemp> compressScreenshot(PageScreenshotTemp screenshot, Integer quality) {
         // 判断压缩质量是否在范围内
         if(quality < MAX_QUALITY && quality > MIN_QUALITY){
             return CompletableFuture.supplyAsync(() -> {
@@ -117,16 +92,16 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
     }
 
     @Override
-    public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<BufferTemp> screenshots) throws IOException {
+    public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) throws IOException {
         WkhtmlRenderResultVO resultBO = new WkhtmlRenderResultVO();
         // 1、判断操作系统，如果是windows，则使用mergeScreenshotsToZip方法，否则使用packScreenshotsToZip方法
         if(SystemUtils.IS_OS_WINDOWS){
-            mergeScreenshotsToZip(renderBO.getRanderId(), screenshots).thenAccept(bufferTemp -> {
+            mergeScreenshotsToZip(renderBO.getTaskId(), screenshots).thenAccept(bufferTemp -> {
                 resultBO.setFilePath(bufferTemp.getPath());
                 resultBO.setFileName(bufferTemp.getName());
             }).join();
         } else {
-            packScreenshotsToZip(renderBO.getRanderId(), screenshots).thenAccept(bufferTemp -> {
+            packScreenshotsToZip(renderBO.getTaskId(), screenshots).thenAccept(bufferTemp -> {
                 resultBO.setFilePath(bufferTemp.getPath());
                 resultBO.setFileName(bufferTemp.getName());
             }).join();;
@@ -136,14 +111,14 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片合并为Zip方法
-     * @param rendeId 渲染ID
-     * @param screenshots 截图缓存
-     * @return 合并后的ZIP缓存
+     * @param rendeId
+     * @param screenshots
+     * @return
      */
     @Override
-    protected CompletableFuture<BufferTemp> mergeScreenshotsToZip(String rendeId, List<BufferTemp> screenshots) {
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToZip(String rendeId, List<PageScreenshotTemp> screenshots) {
         if(screenshots.size() == 1){
-            BufferTemp screenshot = screenshots.get(0);
+            PageScreenshotTemp screenshot = screenshots.get(0);
             String imageFileName = rendeId + "." + FilenameUtils.getExtension(screenshot.getName());
             screenshot.setName(imageFileName);
             return CompletableFuture.completedFuture(screenshot);
@@ -157,7 +132,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
             try {
                 ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(zipFile.toPath()));
                 // 将所有截图写入ZIP文件
-                for (BufferTemp screenshot : screenshots) {
+                for (PageScreenshotTemp screenshot : screenshots) {
                     // 读取图片文件并写入 ZipOutputStream
                     try (FileInputStream fileInput = new FileInputStream(screenshot.getPath())) {
                         String fileName = screenshot.getName();
@@ -174,14 +149,14 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
                 }
                 IOUtils.closeQuietly(zipOutputStream);
                 //metrics.playwright_zip_total_requset_success_count.inc(1);
-                return BufferTemp.builder().index(0).name(zipFileName).path(zipFile.getAbsolutePath()).build();
+                return new PageScreenshotTemp().setIndex(0).setName(zipFileName).setPath(zipFile.getAbsolutePath());
             } catch (Exception e) {
                 throw new TaskRuntimeException("Failed to pack ZIP File : " + zipFileName, e);
             }
         }, dtpToImageZipExecutor);
     }
 
-    protected CompletableFuture<BufferTemp> packScreenshotsToZip(String rendeId, List<BufferTemp> screenshots) {
+    protected CompletableFuture<PageScreenshotTemp> packScreenshotsToZip(String rendeId, List<PageScreenshotTemp> screenshots) {
         if(screenshots.size() == 1){
             return CompletableFuture.completedFuture(screenshots.get(0));
         }
@@ -220,7 +195,7 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
                 executor.execute(cmdLine);
                 // 返回结果
                 File zipFile = new File(playwrightRenderProperties.getTmpDir(), zipFileName);
-                return BufferTemp.builder().index(0).name(zipFileName).path(zipFile.getAbsolutePath()).build();
+                return new PageScreenshotTemp().setIndex(0).setName(zipFileName).setPath(zipFile.getAbsolutePath());
             } catch (Exception e) {
                 throw new TaskRuntimeException("Failed to pack ZIP File : " + zipFileName, e);
             }

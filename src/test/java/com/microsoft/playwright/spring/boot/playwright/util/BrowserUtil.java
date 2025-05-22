@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.util;
+package com.microsoft.playwright.spring.boot.playwright.util;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.options.Cookie;

@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.util;
+package com.microsoft.playwright.spring.boot.playwright.util;
 
 public class TimeUtil {
 

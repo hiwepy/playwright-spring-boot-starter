@@ -1,9 +1,11 @@
-package com.microsoft.playwright.spring.boot.enums;
+package com.microsoft.playwright.spring.boot.playwright.enums;
 
+import lombok.Getter;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
 /**
  * PDF 页面大小，LETTER, LEGAL, A0, A1, A2, A3, A4, A5, A6
+ * @author wandl
  */
 public enum PDPageSize {
 
@@ -16,14 +18,12 @@ public enum PDPageSize {
     A4(PDRectangle.A4),
     A5(PDRectangle.A5),
     A6(PDRectangle.A6);
+
+    @Getter
     private PDRectangle rectangle;
 
     PDPageSize(PDRectangle rectangle) {
         this.rectangle = rectangle;
-    }
-
-    public PDRectangle getRectangle() {
-        return rectangle;
     }
 
     public static PDPageSize getByName(String name) {

@@ -1,10 +1,10 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.alibaba.fastjson2.JSON;
-import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.enums.RenderType;
-import com.microsoft.playwright.spring.boot.strategy.PlaywrightRenderStrategyRouter;
-import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
+import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
+import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
+import com.microsoft.playwright.spring.boot.playwright.strategy.PlaywrightRenderStrategyRouter;
+import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import hitool.core.lang3.uid.Sequence;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +86,7 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         WkhtmlRenderResultVO resultBO = null;
         for (int i = 0; i < 100; i++) {
             try {
-                renderBO.setRanderId(Objects.toString(sequence.nextId()));
+                renderBO.setTaskId(Objects.toString(sequence.nextId()));
                 WkhtmlRenderResultVO resultVO = renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
                 log.info("PDF生成成功: {}", resultVO);
             } catch (Exception e) {
