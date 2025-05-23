@@ -19,7 +19,6 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -54,11 +53,6 @@ public class PlaywrightProperties {
 	 * Browser type. Defaults to {@link BrowserTypeEnum#chromium chromium}.
 	 */
 	private BrowserTypeEnum browserType = BrowserTypeEnum.chromium;
-    /**
-     * Browser Page Pool Config
-     */
-	@NestedConfigurationProperty
-    private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
@@ -84,11 +78,6 @@ public class PlaywrightProperties {
 	 */
 	@NestedConfigurationProperty
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
-	/**
-	 * New Page Options
-	 */
-	@NestedConfigurationProperty
-	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */

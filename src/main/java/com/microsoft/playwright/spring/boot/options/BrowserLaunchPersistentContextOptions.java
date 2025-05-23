@@ -17,6 +17,13 @@ import java.util.Map;
 @Data
 public class BrowserLaunchPersistentContextOptions {
 
+    public static final long DEFAULT_DIR_USAGE_TIMEOUT = 30 * 60 * 1000; // 30分钟
+    public static final long DEFAULT_MAX_DIR_SIZE = 200 * 1024 * 1024; // 200MB
+    public static final int DEFAULT_MAX_CONTEXT_SIZE = 16;
+    public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+    public static final long DEFAULT_RETRY_DELAY_MS = 1000;
+    public static final long DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS = 30 * 1000;
+
     /**
      * Path to a User Data Directory, which stores browser session data like cookies and local storage. More details for <a
      * href="https://chromium.googlesource.com/chromium/src/+/master/docs/user_data_dir.md#introduction">Chromium</a> and <a
@@ -24,7 +31,40 @@ public class BrowserLaunchPersistentContextOptions {
      * Chromium's user data directory is the **parent** directory of the "Profile Path" seen at {@code chrome://version}. Pass
      * an empty string to use a temporary directory instead.
      */
-    public Path userDataDir = Paths.get("tmp", "playwright", "user-data").toAbsolutePath().normalize();
+    public String userDataDir = "/tmp/playwright/";
+
+    /**
+     * Maximum number of browser contexts to be created. If the limit is reached, the oldest context will be closed. Defaults 16
+     */
+    public Integer maximumContentSize = DEFAULT_MAX_CONTEXT_SIZE;
+
+    /**
+     * Maximum size of the user data directory. If the limit is reached, the oldest context will be closed. Defaults 200MB
+     */
+    public Long maximumDirSize = DEFAULT_MAX_DIR_SIZE;
+
+    /**
+     * Maximum time to wait for the user data directory to be used. If the limit is reached, the oldest context will be closed.
+     * Defaults 30 minutes
+     */
+    public Long maximumDirUsageTimeout = DEFAULT_DIR_USAGE_TIMEOUT;
+
+    /**
+     * Maximum number of retry attempts to create a new context. If the limit is reached, the oldest context will be closed.
+     * Defaults 3
+     */
+    public Integer maximumRetryAttempts = DEFAULT_MAX_RETRY_ATTEMPTS;
+
+    /**
+     * Maximum time to wait for the retry delay. If the limit is reached, the oldest context will be closed. Defaults 1 second
+     */
+    public Long maximumRetryDelayMs = DEFAULT_RETRY_DELAY_MS;
+
+    /**
+     * Maximum time to wait for the resource cleanup. If the limit is reached, the oldest context will be closed. Defaults 30
+     * seconds
+     */
+    public Long maximumResourceCleanupTimeoutMs = DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS;
 
     /**
      * Whether to automatically download all the attachments. Defaults to {@code true} where all the downloads are accepted.
@@ -63,7 +103,7 @@ public class BrowserLaunchPersistentContextOptions {
      * "msedge-beta", "msedge-dev", "msedge-canary". Read more about using <a
      * href="https://playwright.dev/java/docs/browsers#google-chrome--microsoft-edge">Google Chrome and Microsoft Edge</a>.
      */
-    public Object channel;
+    public String channel;
     /**
      * Enable Chromium sandboxing. Defaults to {@code false}.
      */
@@ -93,10 +133,6 @@ public class BrowserLaunchPersistentContextOptions {
      * href="https://playwright.dev/java/docs/emulation#devices">emulating devices with device scale factor</a>.
      */
     public Double deviceScaleFactor;
-    /**
-     * @deprecated Use <a href="https://playwright.dev/java/docs/debug">debugging tools</a> instead.
-     */
-    public Boolean devtools;
     /**
      * If specified, accepted downloads are downloaded into this directory. Otherwise, temporary directory is created and is
      * deleted when browser is closed. In either case, the downloads are deleted when the browser context they were created in
@@ -227,7 +263,7 @@ public class BrowserLaunchPersistentContextOptions {
      * com.microsoft.playwright.BrowserContext#close BrowserContext.close()} for the HAR to be saved.
      */
     public Path recordHarPath;
-    public Object recordHarUrlFilter;
+    public String recordHarUrlFilter;
     /**
      * Enables video recording for all pages into the specified directory. If not specified videos are not recorded. Make sure
      * to call {@link com.microsoft.playwright.BrowserContext#close BrowserContext.close()} for videos to be saved.
@@ -274,7 +310,7 @@ public class BrowserLaunchPersistentContextOptions {
      * Maximum time in milliseconds to wait for the browser instance to start. Defaults to {@code 30000} (30 seconds). Pass
      * {@code 0} to disable timeout.
      */
-    public Double timeout;
+    public Double timeout = 30 * 1000.0;
     /**
      * Changes the timezone of the context. See <a
      * href="https://cs.chromium.org/chromium/src/third_party/icu/source/data/misc/metaZones.txt?rcl=faee8bc70570192d82d2978a71e2a615788597d1">ICU's
@@ -299,27 +335,57 @@ public class BrowserLaunchPersistentContextOptions {
      */
     public ViewportSize viewportSize;
 
-
     public BrowserType.LaunchPersistentContextOptions toOptions() {
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         BrowserType.LaunchPersistentContextOptions options = new BrowserType.LaunchPersistentContextOptions();
+        map.from(this.getAcceptDownloads()).whenNonNull().to(options::setAcceptDownloads);
         map.from(this.getArgs()).when(args -> !CollectionUtils.isEmpty(args)).to(options::setArgs);
+        map.from(this.getBaseUrl()).whenNonNull().to(options::setBaseURL);
+        map.from(this.getBypassCsp()).whenNonNull().to(options::setBypassCSP);
+        map.from(this.getChannel()).whenNonNull().to(options::setChannel);
         map.from(this.getChromiumSandbox()).whenNonNull().to(options::setChromiumSandbox);
-        //map.from(this.getDevtools()).whenNonNull().to(options::setDevtools);
+        map.from(this.getClientCertificates()).when(clientCertificates -> !CollectionUtils.isEmpty(clientCertificates)).to(options::setClientCertificates);
+        map.from(this.getColorScheme()).whenNonNull().to(options::setColorScheme);
+        map.from(this.getDeviceScaleFactor()).whenNonNull().to(options::setDeviceScaleFactor);
         map.from(this.getDownloadsPath()).whenNonNull().to(options::setDownloadsPath);
         map.from(this.getEnv()).when(env -> !CollectionUtils.isEmpty(env)).to(options::setEnv);
         map.from(this.getExecutablePath()).whenNonNull().to(options::setExecutablePath);
+        map.from(this.getExtraHttpHeaders()).when(extraHttpHeaders -> !CollectionUtils.isEmpty(extraHttpHeaders)).to(options::setExtraHTTPHeaders);
         map.from(this.getFirefoxUserPrefs()).when(firefoxUserPrefs -> !CollectionUtils.isEmpty(firefoxUserPrefs)).to(options::setFirefoxUserPrefs);
+        map.from(this.getForcedColors()).whenNonNull().to(options::setForcedColors);
+        map.from(this.getGeolocation()).whenNonNull().to(options::setGeolocation);
         map.from(this.getHandleSighup()).whenNonNull().to(options::setHandleSIGHUP);
         map.from(this.getHandleSigint()).whenNonNull().to(options::setHandleSIGINT);
         map.from(this.getHandleSigterm()).whenNonNull().to(options::setHandleSIGTERM);
+        map.from(this.getHasTouch()).whenNonNull().to(options::setHasTouch);
         map.from(this.getHeadless()).whenNonNull().to(options::setHeadless);
+        map.from(this.getHttpCredentials()).whenNonNull().to(options::setHttpCredentials);
         map.from(this.getIgnoreAllDefaultArgs()).whenNonNull().to(options::setIgnoreAllDefaultArgs);
         map.from(this.getIgnoreDefaultArgs()).when(ignoreDefaultArgs -> !CollectionUtils.isEmpty(ignoreDefaultArgs)).to(options::setIgnoreDefaultArgs);
+        map.from(this.getIgnoreHttpsErrors()).whenNonNull().to(options::setIgnoreHTTPSErrors);
+        map.from(this.getIsMobile()).whenNonNull().to(options::setIsMobile);
+        map.from(this.getJavaScriptEnabled()).whenNonNull().to(options::setJavaScriptEnabled);
+        map.from(this.getLocale()).whenNonNull().to(options::setLocale);
+        map.from(this.getOffline()).whenNonNull().to(options::setOffline);
+        map.from(this.getPermissions()).when(permissions -> !CollectionUtils.isEmpty(permissions)).to(options::setPermissions);
         map.from(this.getProxy()).whenNonNull().to(options::setProxy);
+        map.from(this.getRecordHarContent()).whenNonNull().to(options::setRecordHarContent);
+        map.from(this.getRecordHarMode()).whenNonNull().to(options::setRecordHarMode);
+        map.from(this.getRecordHarOmitContent()).whenNonNull().to(options::setRecordHarOmitContent);
+        map.from(this.getRecordHarPath()).whenNonNull().to(options::setRecordHarPath);
+        map.from(this.getRecordHarUrlFilter()).whenNonNull().to(options::setRecordHarUrlFilter);
+        map.from(this.getRecordVideoDir()).whenNonNull().to(options::setRecordVideoDir);
+        map.from(this.getRecordVideoSize()).whenNonNull().to(options::setRecordVideoSize);
+        map.from(this.getReducedMotion()).whenNonNull().to(options::setReducedMotion);
+        map.from(this.getScreenSize()).whenNonNull().to(options::setScreenSize);
+        map.from(this.getServiceWorkers()).whenNonNull().to(options::setServiceWorkers);
         map.from(this.getSlowMo()).whenNonNull().to(options::setSlowMo);
+        map.from(this.getStrictSelectors()).whenNonNull().to(options::setStrictSelectors);
         map.from(this.getTimeout()).whenNonNull().to(options::setTimeout);
+        map.from(this.getTimezoneId()).whenNonNull().to(options::setTimezoneId);
         map.from(this.getTracesDir()).whenNonNull().to(options::setTracesDir);
+        map.from(this.getUserAgent()).whenNonNull().to(options::setUserAgent);
+        map.from(this.getViewportSize()).whenNonNull().to(options::setViewportSize);
         return options;
     }
 
