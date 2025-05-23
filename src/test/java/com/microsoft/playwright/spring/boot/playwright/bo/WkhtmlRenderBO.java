@@ -16,6 +16,10 @@ public class WkhtmlRenderBO implements Serializable {
      */
     private String taskId;
     /**
+     * 文件路径（可作为 pdf 的基础文件，用来优化重试生成时，提高速度）
+     */
+    private String fileUrl;
+    /**
      * 截图元素的选择器，没设置，则对整个页面进行截图
      */
     private String selector;
