@@ -2,11 +2,13 @@ package com.microsoft.playwright.spring.boot.playwright.util;
 
 import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.playwright.checker.PageScreenshotChecker;
 import com.microsoft.playwright.spring.boot.playwright.enums.PDPageSize;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderState;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.PageScreenshotChecker;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -17,9 +19,12 @@ import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +44,81 @@ public class PdfUtil {
         information.setCreationDate(Calendar.getInstance());
         information.setModificationDate(Calendar.getInstance());
         return information;
+    }
+
+    /**
+     * 从远程URL加载PDF文件
+     * @param fileUrl PDF文件URL
+     * @return 加载的PDF文档，如果加载失败或文件不符合要求则返回null
+     */
+    public static PDDocument loadRemotePdf(String fileUrl, long connectTimeout, long readTimeout) {
+        HttpURLConnection headConnection = null;
+        HttpURLConnection getConnection = null;
+        try {
+            URL url = new URL(fileUrl);
+
+            // 第一次连接：HEAD 请求检查文件
+            headConnection = (HttpURLConnection) url.openConnection();
+            headConnection.setConnectTimeout(Long.valueOf(connectTimeout).intValue());
+            headConnection.setReadTimeout(Long.valueOf(readTimeout).intValue());
+            headConnection.setRequestMethod("HEAD");
+
+            // 检查响应状态
+            int responseCode = headConnection.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                log.warn("Source PDF file not found or not accessible. Response code: {}", responseCode);
+                return null;
+            }
+
+            // 检查 Content-Type
+            String contentType = headConnection.getContentType();
+            if (contentType == null || !contentType.toLowerCase().contains("application/pdf")) {
+                log.warn("Invalid file type. Expected PDF but got: {}", contentType);
+                return null;
+            }
+
+            // 获取文件大小
+            int fileSize = headConnection.getContentLength();
+            if (fileSize <= 0) {
+                log.warn("Invalid file size: {}", fileSize);
+                return null;
+            }
+            log.debug("Source PDF file size: {} bytes", fileSize);
+
+            // 关闭 HEAD 请求连接
+            headConnection.disconnect();
+            headConnection = null;
+
+            // 第二次连接：GET 请求获取文件内容
+            getConnection = (HttpURLConnection) url.openConnection();
+            getConnection.setConnectTimeout(Long.valueOf(connectTimeout).intValue());
+            getConnection.setReadTimeout(Long.valueOf(readTimeout).intValue());
+
+            try (BufferedInputStream bufferedInputStream = new BufferedInputStream(getConnection.getInputStream(), 8192)) {
+                // 使用 IOUtils 高效读取字节数组
+                byte[] pdfBytes = IOUtils.toByteArray(bufferedInputStream);
+
+                // 验证文件大小
+                if (pdfBytes.length != fileSize) {
+                    log.warn("File size mismatch. Expected: {}, Actual: {}", fileSize, pdfBytes.length);
+                    return null;
+                }
+
+                // 加载并返回PDF文档
+                return Loader.loadPDF(pdfBytes);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load remote PDF file: {}", fileUrl, e);
+            return null;
+        } finally {
+            // 确保所有连接都被正确关闭
+            if (headConnection != null) {
+                headConnection.disconnect();
+            }
+            if (getConnection != null) {
+                getConnection.disconnect();
+            }
+        }
     }
 
     /**
