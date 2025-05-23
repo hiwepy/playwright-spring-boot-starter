@@ -1,8 +1,8 @@
 package com.microsoft.playwright.spring.boot.playwright.util;
 
-import com.microsoft.playwright.spring.boot.playwright.checker.FastImageComparator;
-import com.microsoft.playwright.spring.boot.playwright.checker.ImagePixelCache;
 import com.microsoft.playwright.spring.boot.playwright.enums.PDPageSize;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.FastImageComparator;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.ImagePixelCache;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Coordinate;
