@@ -75,12 +75,34 @@ public class PlaywrightRenderProperties {
 	 */
 	protected RenderCache cache = new RenderCache();
 
+	/**
+	 * 远程 PDF 配置
+	 */
+	protected RemotePdf pdf = new RemotePdf();
+
 	@Data
 	public static class RenderCache {
 
 		protected Duration expireAfterWrite = Duration.ofSeconds(3);
 		protected int initialCapacity = 3;
 		protected int maximumSize = 10;
+
+	}
+	/**
+	 * 远程 PDF 配置
+	 */
+	@Data
+	public static class RemotePdf {
+
+		/**
+		 * 连接超时时间（毫秒）
+		 */
+		protected Duration connectTimeout = Duration.ofSeconds(3);
+
+		/**
+		 * 读取超时时间（毫秒）
+		 */
+		protected Duration readTimeout = Duration.ofSeconds(10);
 
 	}
 
