@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.playwright.checker;
+package com.microsoft.playwright.spring.boot.playwright.page.checker;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;

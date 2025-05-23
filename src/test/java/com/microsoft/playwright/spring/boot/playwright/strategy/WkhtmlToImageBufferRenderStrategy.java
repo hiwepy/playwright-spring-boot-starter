@@ -5,21 +5,17 @@ import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
 import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
+import com.microsoft.playwright.spring.boot.playwright.page.supplier.PageScreenshotMergeToZipOutputStreamSupplier;
 import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * 使用 Playwright 渲染引擎将 HTML 渲染为各种图像格式
@@ -57,9 +53,9 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshots
-     * @param quality
-     * @return
+     * @param screenshots 截图列表
+     * @param quality 压缩质量
+     * @return 压缩后的截图
      */
     protected List<PageScreenshotTemp> compressScreenshots(List<PageScreenshotTemp> screenshots, Integer quality) {
         if((quality > MAX_QUALITY || quality < MIN_QUALITY)){
@@ -79,9 +75,9 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshot
-     * @param quality
-     * @return
+     * @param screenshot 截图
+     * @param quality 压缩质量
+     * @return 压缩后的截图
      */
     protected CompletableFuture<PageScreenshotTemp> compressScreenshot(PageScreenshotTemp screenshot, Integer quality) {
         // 判断压缩质量和压缩比例是否在范围内
@@ -112,7 +108,7 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
     @Override
     public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) throws IOException {
         WkhtmlRenderResultVO resultBO = new WkhtmlRenderResultVO();
-        mergeScreenshotsToZip(renderBO.getTaskId(), screenshots).thenAccept(bufferTemp -> {
+        this.mergeScreenshotsToZip(renderBO, screenshots).thenAccept(bufferTemp -> {
             resultBO.setFileBuffer(bufferTemp.getBuffer());
             resultBO.setFileName(bufferTemp.getName());
         }).join();
@@ -120,54 +116,13 @@ public class WkhtmlToImageBufferRenderStrategy extends AbstractPlaywrightRenderS
     }
 
     /**
-     * 默认编码，使用平台相关编码
-     */
-    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
-    /**
      * 定义一个图片合并为Zip方法
-     * @param rendeId
-     * @param screenshots
-     * @return
+     * @param renderBO 渲染参数
+     * @param screenshots 截图列表
+     * @return 打包后的Zip文件
      */
-    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToZip(String rendeId, List<PageScreenshotTemp> screenshots) {
-        if(screenshots.size() == 1){
-            PageScreenshotTemp screenshot = screenshots.get(0);
-            String imageFileName = rendeId + "." + FilenameUtils.getExtension(screenshot.getName());
-            screenshot.setName(imageFileName);
-            return CompletableFuture.completedFuture(screenshot);
-        }
-        return CompletableFuture.supplyAsync(() -> {
-            String zipFileName = rendeId + ".zip";
-            log.info("Merging screenshots to ZIP: {}", zipFileName);
-            // 请求数+1
-            //metrics.playwright_zip_total_requset_count.inc(1);
-            try {
-                ByteArrayOutputStream zipOutput = new ByteArrayOutputStream();
-                ZipOutputStream zipOutputStream = new ZipOutputStream(zipOutput, DEFAULT_CHARSET);
-                // 将所有截图写入ZIP文件
-                for (PageScreenshotTemp screenshot : screenshots) {
-                    try (ByteArrayInputStream bufferInput = new ByteArrayInputStream(screenshot.getBuffer())){
-                        String fileName = screenshot.getName();
-                        log.info("Merging screenshot to ZIP: {}", fileName);
-                        // 创建 ZipEntry 对象
-                        ZipEntry zipEntry = new ZipEntry(fileName);
-                        zipOutputStream.putNextEntry(zipEntry);
-                        // 将截图缓存写入 ZipOutputStream
-                        IOUtils.copy(bufferInput, zipOutputStream);
-                        // 关闭当前 ZipEntry
-                        zipOutputStream.closeEntry();
-                    }
-                    zipOutputStream.flush();
-                }
-                IOUtils.closeQuietly(zipOutputStream);
-                IOUtils.closeQuietly(zipOutput);
-                //metrics.playwright_zip_total_requset_success_count.inc(1);
-                return new PageScreenshotTemp().setIndex(0).setName(zipFileName).setBuffer(zipOutput.toByteArray());
-            } catch (Exception e) {
-                //metrics.playwright_zip_total_requset_error_count.inc(1);
-                throw new TaskRuntimeException("Merging screenshots to ZIP error: {}", e);
-            }
-        }, dtpToImageZipExecutor);
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToZip(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
+        return CompletableFuture.supplyAsync(new PageScreenshotMergeToZipOutputStreamSupplier(playwrightRenderProperties, renderBO, screenshots), dtpToImageZipExecutor);
     }
 
 }

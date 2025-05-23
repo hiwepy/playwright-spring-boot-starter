@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.playwright.checker;
+package com.microsoft.playwright.spring.boot.playwright.page.checker;
 
 import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.enums.PDPageSize;

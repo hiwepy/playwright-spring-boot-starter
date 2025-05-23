@@ -4,10 +4,8 @@ import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
 import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.playwright.util.PdfUtil;
 import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pdfbox.pdmodel.PDDocument;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +27,7 @@ public class WkhtmlToPdfBufferRenderStrategy extends WkhtmlToImageBufferRenderSt
     @Override
     public WkhtmlRenderResultVO doPacking(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) throws IOException {
         WkhtmlRenderResultVO resultBO = new WkhtmlRenderResultVO();
-        mergeScreenshotsToPDF(renderBO, screenshots)
+        this.mergeScreenshotsToPDF(renderBO, screenshots)
                 .thenAccept(bufferTemp -> {
                     resultBO.setFileBuffer(bufferTemp.getBuffer());
                     resultBO.setFileName(bufferTemp.getName());
@@ -39,29 +37,26 @@ public class WkhtmlToPdfBufferRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片合并为PDF方法
-     *
-     * @param renderBO
-     * @param screenshots
-     * @return
-     * @throws IOException
+     * @param renderBO 渲染参数
+     * @param screenshots 截图列表
+     * @return 合并后的PDF文件
      */
-    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
-        return CompletableFuture.supplyAsync(() -> {
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO,
+                                                                          List<PageScreenshotTemp> screenshots) {
+        return this.mergeScreenshotsToPDF(renderBO, screenshots, (sourceDocument, screenshot) -> {
             String pdfFileName = "document_" + renderBO.getTaskId() + ".pdf";
             log.info("Merging screenshots to PDF: {}", pdfFileName);
-            // 请求数+1
-            // 创建空白文档
-            try (PDDocument pdDocument = new PDDocument()) {
-                PdfUtil.addPages(renderBO, screenshots, pdDocument, this.getPageScreenshotCheckers(), renderBO.isSkipFail(), renderBO.getMaxSingleColorPercent(), renderBO.getMaxSimilarity());
-                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                    pdDocument.save(outputStream);
-                    return new PageScreenshotTemp().setIndex(0).setName(pdfFileName).setBuffer(outputStream.toByteArray());
-                }
-            } catch (Exception e) {
-                throw new TaskRuntimeException("Merging screenshots to PDF failed", e);
+            // 使用缓冲输出流保存文件
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                sourceDocument.save(outputStream);
+                return new PageScreenshotTemp().setIndex(0).setName(pdfFileName).setBuffer(outputStream.toByteArray());
+            } catch (IOException e) {
+                throw new TaskRuntimeException("Failed to merge PDF File : " + pdfFileName, e);
             }
-        }, dtpToPdfMergeExecutor);
+        });
     }
+
+
 
 
 }

@@ -4,9 +4,7 @@ import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
 import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
-import com.microsoft.playwright.spring.boot.playwright.util.PdfUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pdfbox.multipdf.PDFMergerUtility;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,38 +35,17 @@ public class WkhtmlToPdfMergerFileRenderStrategy extends WkhtmlToPdfMergerBuffer
     }
 
     /**
-     * 定义一个图片合并为PDF方法
-     * @param renderBO
-     * @param pdfs
-     * @throws IOException
+     * 定义一个PDF合并为PDF方法
+     * @param renderBO 渲染参数
+     * @param pdfs Pdf 列表
+     * @return 合并后的PDF文件
      */
     @Override
-    protected CompletableFuture<PageScreenshotTemp> mergePdfsToPDF(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> pdfs) {
-        if(pdfs.size() == 1){
-            PageScreenshotTemp pageScreenshotTemp = pdfs.get(0);
+    protected CompletableFuture<PageScreenshotTemp> mergePdfsToPDF(WkhtmlRenderBO renderBO,
+                                                                   List<PageScreenshotTemp> pdfs) {
+        return this.mergePdfsToPDF(renderBO, pdfs, (mergePdf, screenshot) -> {
             String pdfFileName = "document_" + renderBO.getTaskId() + ".pdf";
-            pageScreenshotTemp.setName(pdfFileName);
-            return CompletableFuture.completedFuture(pageScreenshotTemp);
-        }
-        return CompletableFuture.supplyAsync(() -> {
-            String pdfFileName = "document_" + renderBO.getTaskId() + ".pdf";
-            log.info("Merging pdf files to PDF: {}", pdfFileName);
-            // 如果有多个文件，则合并pdf文件
             try {
-                /**
-                 * org.apache.pdfbox.util.PDFMergerUtility：pdf合并工具类
-                 * https://blog.csdn.net/qq_38998209/article/details/127983909
-                 */
-                PDFMergerUtility mergePdf = new PDFMergerUtility();
-                // 设置PDF属性
-                mergePdf.setDestinationDocumentInformation(PdfUtil.information(renderBO));
-                // 设置合并模式为压缩资源模式
-                mergePdf.setDocumentMergeMode(PDFMergerUtility.DocumentMergeMode.OPTIMIZE_RESOURCES_MODE);
-                // 合并pdf文件路径
-                for (PageScreenshotTemp buffer : pdfs) {
-                    mergePdf.addSource(new File(buffer.getPath()));
-                    log.info("Merging pdf file {} to PDF {} succeed.", buffer.getPath(), pdfFileName);
-                }
                 // 设置合并生成pdf文件名称
                 String pdfFilePath = playwrightRenderProperties.getTmpDir() + File.separator + pdfFileName;
                 mergePdf.setDestinationFileName(pdfFilePath);
@@ -82,10 +59,10 @@ public class WkhtmlToPdfMergerFileRenderStrategy extends WkhtmlToPdfMergerBuffer
                 mergePdf.mergeDocuments(null);
                 // 返回合并后的pdf文件
                 return new PageScreenshotTemp().setIndex(0).setName(pdfFileName).setPath(pdfFilePath);
-            } catch (Exception e) {
-                throw new TaskRuntimeException("Merge pdf files to PDF error: ", e);
+            }  catch (IOException e) {
+                throw new TaskRuntimeException("Failed to merge PDF File : " + pdfFileName, e);
             }
-        }, dtpToPdfMergeExecutor);
+        });
     }
 
 }

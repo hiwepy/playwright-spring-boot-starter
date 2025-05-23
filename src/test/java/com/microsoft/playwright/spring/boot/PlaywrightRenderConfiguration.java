@@ -1,8 +1,8 @@
 package com.microsoft.playwright.spring.boot;
 
 
-import com.microsoft.playwright.spring.boot.playwright.checker.DefaultPageScreenshotChecker;
-import com.microsoft.playwright.spring.boot.playwright.checker.PageScreenshotChecker;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.DefaultPageScreenshotChecker;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.PageScreenshotChecker;
 import com.microsoft.playwright.spring.boot.playwright.strategy.*;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

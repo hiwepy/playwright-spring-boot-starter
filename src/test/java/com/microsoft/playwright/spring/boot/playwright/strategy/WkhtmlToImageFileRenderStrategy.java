@@ -5,25 +5,18 @@ import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
 import com.microsoft.playwright.spring.boot.playwright.exception.TaskRuntimeException;
+import com.microsoft.playwright.spring.boot.playwright.page.supplier.PageScreenshotMergeToZipFileSupplier;
+import com.microsoft.playwright.spring.boot.playwright.page.supplier.PageScreenshotPackToZipFileSupplier;
 import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
-import org.apache.commons.exec.CommandLine;
-import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.exec.ExecuteWatchdog;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * 使用 Playwright 渲染引擎将 HTML 渲染为各种图像格式
@@ -61,9 +54,9 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
 
     /**
      * 定义一个图片压缩方法
-     * @param screenshot
-     * @param quality
-     * @return
+     * @param screenshot 截图
+     * @param quality 压缩质量
+     * @return 压缩后的截图
      */
     @Override
     protected CompletableFuture<PageScreenshotTemp> compressScreenshot(PageScreenshotTemp screenshot, Integer quality) {
@@ -96,12 +89,12 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
         WkhtmlRenderResultVO resultBO = new WkhtmlRenderResultVO();
         // 1、判断操作系统，如果是windows，则使用mergeScreenshotsToZip方法，否则使用packScreenshotsToZip方法
         if(SystemUtils.IS_OS_WINDOWS){
-            mergeScreenshotsToZip(renderBO.getTaskId(), screenshots).thenAccept(bufferTemp -> {
+            this.mergeScreenshotsToZip(renderBO, screenshots).thenAccept(bufferTemp -> {
                 resultBO.setFilePath(bufferTemp.getPath());
                 resultBO.setFileName(bufferTemp.getName());
             }).join();
         } else {
-            packScreenshotsToZip(renderBO.getTaskId(), screenshots).thenAccept(bufferTemp -> {
+            this.packScreenshotsToZip(renderBO, screenshots).thenAccept(bufferTemp -> {
                 resultBO.setFilePath(bufferTemp.getPath());
                 resultBO.setFileName(bufferTemp.getName());
             }).join();;
@@ -110,96 +103,24 @@ public class WkhtmlToImageFileRenderStrategy extends WkhtmlToImageBufferRenderSt
     }
 
     /**
-     * 定义一个图片合并为Zip方法
-     * @param rendeId
-     * @param screenshots
-     * @return
+     * 定义一个图片打包为Zip方法
+     * @param renderBO 渲染参数
+     * @param screenshots 截图列表
+     * @return 打包后的Zip文件
      */
     @Override
-    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToZip(String rendeId, List<PageScreenshotTemp> screenshots) {
-        if(screenshots.size() == 1){
-            PageScreenshotTemp screenshot = screenshots.get(0);
-            String imageFileName = rendeId + "." + FilenameUtils.getExtension(screenshot.getName());
-            screenshot.setName(imageFileName);
-            return CompletableFuture.completedFuture(screenshot);
-        }
-        return CompletableFuture.supplyAsync(() -> {
-            String zipFileName = rendeId + ".zip";
-            log.info("Merging screenshots to ZIP: {}", zipFileName);
-            // 请求数+1
-            //metrics.playwright_zip_total_requset_count.inc(1);
-            File zipFile = new File(playwrightRenderProperties.getTmpDir(), zipFileName);
-            try {
-                ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(zipFile.toPath()));
-                // 将所有截图写入ZIP文件
-                for (PageScreenshotTemp screenshot : screenshots) {
-                    // 读取图片文件并写入 ZipOutputStream
-                    try (FileInputStream fileInput = new FileInputStream(screenshot.getPath())) {
-                        String fileName = screenshot.getName();
-                        log.info("Merging screenshot to ZIP: {}", fileName);
-                        // 创建 ZipEntry 对象
-                        ZipEntry zipEntry = new ZipEntry(fileName);
-                        zipOutputStream.putNextEntry(zipEntry);
-                        // 将截图文件写入 ZipOutputStream
-                        IOUtils.copy(fileInput, zipOutputStream);
-                        // 关闭当前 ZipEntry
-                        zipOutputStream.closeEntry();
-                    }
-                    zipOutputStream.flush();
-                }
-                IOUtils.closeQuietly(zipOutputStream);
-                //metrics.playwright_zip_total_requset_success_count.inc(1);
-                return new PageScreenshotTemp().setIndex(0).setName(zipFileName).setPath(zipFile.getAbsolutePath());
-            } catch (Exception e) {
-                throw new TaskRuntimeException("Failed to pack ZIP File : " + zipFileName, e);
-            }
-        }, dtpToImageZipExecutor);
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToZip(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
+        return CompletableFuture.supplyAsync(new PageScreenshotMergeToZipFileSupplier(playwrightRenderProperties, renderBO, screenshots), dtpToImageZipExecutor);
     }
 
-    protected CompletableFuture<PageScreenshotTemp> packScreenshotsToZip(String rendeId, List<PageScreenshotTemp> screenshots) {
-        if(screenshots.size() == 1){
-            return CompletableFuture.completedFuture(screenshots.get(0));
-        }
-        log.info("Packing screenshots to ZIP: {}", rendeId);
-        String zipFileName = rendeId + ".zip";
-        return CompletableFuture.supplyAsync(() -> {
-            // 如果有多个文件，则打包成zip
-            try {
-                // 创建执行器
-                DefaultExecutor executor = new DefaultExecutor();
-                executor.setWorkingDirectory(new File(playwrightRenderProperties.getTmpDir()));
-                // 创建监控时间10分钟，超过10分钟则中断执行
-                ExecuteWatchdog watchdog = new ExecuteWatchdog(10 * 60 * 1000);
-                executor.setWatchdog(watchdog);
-                /**
-                 zip -r ../files.zip ./*
-                 zip [参数] [打包后的文件名] [打包的目录路径]
-                 linux zip命令参数列表：
-                 -a 将文件转成ASCII模式
-                 -F 尝试修复损坏的压缩文件
-                 -h 显示帮助界面
-                 -m 将文件压缩之后，删除源文件
-                 -n 特定字符串 不压缩具有特定字尾字符串的文件
-                 -o 将压缩文件内的所有文件的最新变动时间设为压缩时候的时间
-                 -q 安静模式，在压缩的时候不显示指令的执行过程
-                 -r 将指定的目录下的所有子目录以及文件一起处理
-                 -S 包含系统文件和隐含文件（S是大写）
-                 -t 日期 把压缩文件的最后修改日期设为指定的日期，日期格式为mmddyyyy
-                 */
-                // zip 命令行
-                CommandLine cmdLine = new CommandLine("zip");
-                cmdLine.addArgument("-r");
-                cmdLine.addArgument(zipFileName);
-                cmdLine.addArgument(rendeId);
-                // 执行 zip 命令行
-                executor.execute(cmdLine);
-                // 返回结果
-                File zipFile = new File(playwrightRenderProperties.getTmpDir(), zipFileName);
-                return new PageScreenshotTemp().setIndex(0).setName(zipFileName).setPath(zipFile.getAbsolutePath());
-            } catch (Exception e) {
-                throw new TaskRuntimeException("Failed to pack ZIP File : " + zipFileName, e);
-            }
-        }, dtpToImageZipExecutor);
+    /**
+     * 定义一个图片打包为Zip方法
+     * @param renderBO 渲染参数
+     * @param screenshots 截图列表
+     * @return 打包后的Zip文件
+     */
+    protected CompletableFuture<PageScreenshotTemp> packScreenshotsToZip(WkhtmlRenderBO renderBO, List<PageScreenshotTemp> screenshots) {
+        return CompletableFuture.supplyAsync(new PageScreenshotPackToZipFileSupplier(playwrightRenderProperties, renderBO, screenshots), dtpToImageZipExecutor);
     }
 
 }

@@ -1,4 +1,4 @@
-package com.microsoft.playwright.spring.boot.playwright.checker;
+package com.microsoft.playwright.spring.boot.playwright.page.checker;
 
 import com.github.benmanes.caffeine.cache.*;
 import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;

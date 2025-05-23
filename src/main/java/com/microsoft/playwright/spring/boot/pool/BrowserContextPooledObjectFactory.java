@@ -367,17 +367,8 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
         
         if (Objects.nonNull(browserContext) && browserContext.browser() != null && browserContext.browser().isConnected()) {
             try {
-                // 1. 先关闭所有页面
-                browserContext.pages().forEach(PlaywrightUtil::closePage);
                 
-                // 2. 然后清理数据
-                try {
-                    browserContext.clearCookies();
-                } catch (Exception e) {
-                    log.warn("Failed to clear cookies");
-                }
-                
-                // 3. 清理其他存储
+                // 1. 清理每个页面的数据
                 browserContext.pages().forEach(page -> {
                     try {
                         page.evaluate("() => window.localStorage.clear()");
@@ -390,6 +381,16 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
                         log.warn("Failed to clear storage");
                     }
                 });
+
+                // 2. 清理 cookies
+                try {
+                    browserContext.clearCookies();
+                } catch (Exception e) {
+                    log.warn("Failed to clear cookies");
+                }
+
+                // 3 先关闭所有页面
+                browserContext.pages().forEach(PlaywrightUtil::closePage);
                 
                 // 4. 更新目录大小
                 Path contextDir = CONTEXT_DIR_MAP.get(browserContext);
@@ -424,63 +425,47 @@ public class BrowserContextPooledObjectFactory implements PooledObjectFactory<Br
 
         while (retryCount < this.getMaximumRetryAttempts()) {
             try {
-                // 设置超时
-                CompletableFuture<Void> cleanupFuture = CompletableFuture.runAsync(() -> {
-                    try {
-                        // 1. 清理浏览器上下文
-                        try {
-                            PlaywrightUtil.cleanupBrowserContext(browserContext);
-                        } catch (Exception e) {
-                            log.warn("Error cleaning up browser context, continuing with cleanup");
-                        }
-
-                        // 2. 关闭上下文
-                        try {
-                            if (browserContext.browser() != null && browserContext.browser().isConnected()) {
-                                browserContext.close();
-                            }
-                        } catch (Exception e) {
-                            log.warn("Error closing browser context, continuing with cleanup");
-                        }
-
-                        // 3. 清理 Playwright 实例
-                        Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
-                        if (playwright != null) {
-                            try {
-                                playwright.close();
-                                log.info("Cleaned up Playwright instance in destroyObject");
-                            } catch (Exception e) {
-                                log.warn("Error closing Playwright instance, continuing with cleanup");
-                            }
-                        }
-
-                        // 4. 清理目录
-                        Path contextDir = CONTEXT_DIR_MAP.remove(browserContext);
-                        if (contextDir != null) {
-                            CONTEXT_DIR_LAST_USED.remove(contextDir);
-                            CONTEXT_DIR_SIZE.remove(contextDir);
-                            try {
-                                FileUtils.deleteDirectory(contextDir.toFile());
-                                log.info("Cleaned up Playwright context directory in destroyObject");
-                            } catch (Exception e) {
-                                log.error("Error cleaning up Playwright context directory");
-                                // 不抛出异常，继续清理
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.error("Error during resource cleanup", e);
-                        throw new CompletionException(e);
-                    }
-                });
-
-                // 等待清理完成或超时
+                // 1. 清理浏览器上下文
                 try {
-                    cleanupFuture.get(this.getMaximumResourceCleanupTimeoutMs(), TimeUnit.MILLISECONDS);
-                    return; // 清理成功，直接返回
-                } catch (TimeoutException e) {
-                    log.warn("Resource cleanup timed out after {} ms", this.getMaximumResourceCleanupTimeoutMs());
-                    throw new Exception("Resource cleanup timed out", e);
+                    PlaywrightUtil.cleanupBrowserContext(browserContext);
+                } catch (Exception e) {
+                    log.warn("Error cleaning up browser context: {}", e.getMessage());
                 }
+
+                // 2. 关闭上下文
+                try {
+                    if (browserContext.browser() != null && browserContext.browser().isConnected()) {
+                        browserContext.close();
+                    }
+                } catch (Exception e) {
+                    log.warn("Error closing browser context: {}", e.getMessage());
+                }
+
+                // 3. 清理 Playwright 实例
+                Playwright playwright = PLAYWRIGHT_MAP.remove(browserContext);
+                if (playwright != null) {
+                    try {
+                        playwright.close();
+                        log.info("Cleaned up Playwright instance in destroyObject");
+                    } catch (Exception e) {
+                        log.warn("Error closing Playwright instance: {}", e.getMessage());
+                    }
+                }
+
+                // 4. 清理目录
+                Path contextDir = CONTEXT_DIR_MAP.remove(browserContext);
+                if (contextDir != null) {
+                    CONTEXT_DIR_LAST_USED.remove(contextDir);
+                    CONTEXT_DIR_SIZE.remove(contextDir);
+                    try {
+                        FileUtils.deleteDirectory(contextDir.toFile());
+                        log.info("Cleaned up Playwright context directory in destroyObject");
+                    } catch (Exception e) {
+                        log.error("Error cleaning up Playwright context directory: {}", e.getMessage());
+                    }
+                }
+                
+                return; // 清理成功，直接返回
             } catch (Exception e) {
                 lastException = e;
                 retryCount++;

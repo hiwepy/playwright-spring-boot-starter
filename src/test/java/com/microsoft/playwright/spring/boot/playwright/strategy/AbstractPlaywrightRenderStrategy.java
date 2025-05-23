@@ -12,13 +12,15 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.Media;
 import com.microsoft.playwright.spring.boot.PlaywrightProperties;
-import com.microsoft.playwright.spring.boot.PlaywrightRenderProperties;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPool;
+import com.microsoft.playwright.spring.boot.PlaywrightRenderProperties;
 import com.microsoft.playwright.spring.boot.playwright.bo.PageScreenshotTemp;
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.playwright.checker.PageScreenshotChecker;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderState;
 import com.microsoft.playwright.spring.boot.playwright.enums.ResourceType;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.PageScreenshotChecker;
+import com.microsoft.playwright.spring.boot.playwright.page.supplier.PagePdfMergeToPdfSupplier;
+import com.microsoft.playwright.spring.boot.playwright.page.supplier.PageScreenshotMergeToPdfSupplier;
 import com.microsoft.playwright.spring.boot.playwright.redis.BizRedisKey;
 import com.microsoft.playwright.spring.boot.playwright.util.ImageUtil;
 import com.microsoft.playwright.spring.boot.playwright.util.TimeUtil;
@@ -32,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -134,7 +138,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 // 报告单渲染状态缓存
                 String rdsKey = BizRedisKey.RENDER_STATE.getKey(taskId);
                 Map<Object, Object> stateMap = redisOperation.hmGet(rdsKey);
-                boolean hasStateChanged = false;
+                boolean hasStateAdd = false;
                 // 网页URL数组
                 List<PageScreenshotTemp> tempList = Lists.newArrayList();
                 for (int i = 0; i < urls.size(); i++) {
@@ -147,22 +151,46 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                     if(Objects.nonNull(urlQuery)){
                         String uniqueId = Objects.toString(urlQuery.get(REPORT_PARAM_UNIQUEID_NAME), StringUtils.EMPTY);
                         if(StringUtils.isNotBlank(uniqueId)){
+                            // 设置唯一ID
                             screenshotTemp.setUniqueId(uniqueId);
-                        }
-                        // 没有缓存则表示是初次渲染或缓存过期了
-                        if (Objects.isNull(stateMap)) {
-                            stateMap = Maps.newHashMap();
-                        }
-                        if(!stateMap.containsKey(uniqueId)){
-                            hasStateChanged = true;
-                            stateMap.put(uniqueId, RenderState.WAITING.name());
+                            // 没有缓存则表示是初次渲染或缓存过期了
+                            if (Objects.isNull(stateMap)) {
+                                stateMap = Maps.newHashMap();
+                            }
+                            // 如果缓存中存在渲染状态，则根据渲染状态进行处理实际的逻辑处理
+                            if (stateMap.containsKey(uniqueId)) {
+                                String renderState = MapUtils.getString(stateMap, uniqueId, StringUtils.EMPTY);
+                                if(StringUtils.isBlank(renderState)){
+                                    hasStateAdd = true;
+                                    stateMap.put(uniqueId, RenderState.WAITING.name());
+                                    log.info("页面渲染状态不存在，重新渲染，TaskId: {}, url : {}", taskId, urls.get(i));
+                                }
+                                else if (RenderState.SUCCESS.name().equals(renderState)) {
+                                    screenshotTemp.setRenderState(RenderState.SUCCESS);
+                                    log.info("页面渲染成功，标记状态，以便后面逻辑使用，TaskId: {}, url : {}", taskId, urls.get(i));
+                                } else if (RenderState.FAIL.name().equals(renderState)) {
+                                    screenshotTemp.setRenderState(RenderState.FAIL);
+                                    log.info("页面渲染失败，重新渲染，TaskId: {}, url : {}", taskId, urls.get(i));
+                                } else if (RenderState.CHECK_FAIL.name().equals(renderState)) {
+                                    screenshotTemp.setRenderState(RenderState.CHECK_FAIL);
+                                    log.info("页面检查不通过，重新渲染，TaskId: {}, url : {}", taskId, urls.get(i));
+                                } else if (RenderState.GENERATING.name().equals(renderState)) {
+                                    screenshotTemp.setRenderState(RenderState.GENERATING);
+                                    log.info("页面在其他任务中，正在生成，TaskId: {}, url : {}", taskId, urls.get(i));
+                                }
+                            } else {
+                                hasStateAdd = true;
+                                stateMap.put(uniqueId, RenderState.WAITING.name());
+                                log.info("页面渲染状态不存在，重新渲染，TaskId: {}, url : {}", taskId, urls.get(i));
+                            }
+
                         }
                     }
                     tempList.add(screenshotTemp);
                 }
                 renderBO.setUrls(tempList);
                 // 有渲染状态缓存时候
-                if (MapUtils.isNotEmpty(stateMap) && hasStateChanged) {
+                if (MapUtils.isNotEmpty(stateMap) && hasStateAdd) {
                     redisOperation.hmSet(rdsKey, stateMap, Duration.ofDays(2));
                 }
             }
@@ -292,8 +320,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 log.info("异步截图任务开始执行...");
                 screenshotTemp.setRenderState(RenderState.GENERATING);
                 try(Page page = browserContext.newPage()) {
-                    // 设置默认页面为 about:blank
-                    page.navigate("about:blank");
                     // 跳转到url
                     log.info("Async Capturing Screenshot start for rendeId: {}, selector: {}, url : {}", rendeId, selector, screenshotTemp.getUrl());
                     PageScreenshotTemp pageScreenshot = this.loadPageWithCallback(page, rendeId, selector, screenshotTemp, this.doPageScreenShot(rendeId, selector));
@@ -556,7 +582,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             screenshotTemp.setRenderState(RenderState.SUCCESS);
             if(Objects.nonNull(screenshotTemp.getUniqueId())){
                 String rdsKey = BizRedisKey.RENDER_STATE.getKey(rendeId);
-                redisOperation.hSet(rdsKey, screenshotTemp.getUniqueId(), RenderState.SUCCESS.name());
+                redisOperation.hSet(rdsKey, screenshotTemp.getUniqueId(), RenderState.SUCCESS.name(), Duration.ofDays(2));
             }
             return applyTemp;
         } else {
@@ -619,7 +645,7 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 screenshotTemp.setRenderState(RenderState.SUCCESS);
                 if(Objects.nonNull(screenshotTemp.getUniqueId())){
                     String rdsKey = BizRedisKey.RENDER_STATE.getKey(rendeId);
-                    redisOperation.hSet(rdsKey, screenshotTemp.getUniqueId(), RenderState.SUCCESS.name());
+                    redisOperation.hSet(rdsKey, screenshotTemp.getUniqueId(), RenderState.SUCCESS.name(), Duration.ofDays(2));
                 }
                 return applyTemp;
             } else {
@@ -773,8 +799,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
                 screenshotTemp.setRenderState(RenderState.GENERATING);
                 browserContext = browserContextPool.borrowObject();
                 try(Page page = browserContext.newPage()) {
-                    // 设置默认页面为 about:blank
-                    page.navigate("about:blank");
                     log.info("Async Generate pdf start for rendeId: {}, url : {}", rendeId, screenshotTemp.getUrl());
                     PageScreenshotTemp pageToPdf = this.loadPageWithCallback(page, rendeId, selector, screenshotTemp, this.doPageToPdf(rendeId));
                     log.info("Async Generate pdf completed for rendeId: {}, url : {}, pageName: {}, fileSize: {}KB", rendeId, screenshotTemp.getUrl(), pageToPdf.getName(),
@@ -840,8 +864,6 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
 
     protected PageScreenshotTemp pageToPdfFutureSync(BrowserContext browserContext, String rendeId, String selector, PageScreenshotTemp screenshotTemp) {
         try (Page page = browserContext.newPage()) {
-            // 设置默认页面为 about:blank
-            page.navigate("about:blank");
             screenshotTemp.setRenderState(RenderState.GENERATING);
             log.info("Sync Generate pdf start for rendeId: {}, url : {}", rendeId, screenshotTemp.getUrl());
             PageScreenshotTemp pageToPdf = this.loadPageWithCallback(page, rendeId, selector, screenshotTemp, this.doPageToPdf(rendeId));
@@ -891,6 +913,30 @@ public abstract class AbstractPlaywrightRenderStrategy<B extends WkhtmlRenderBO>
             }
             return screenshotTemp;
         };
+    }
+
+    /**
+     * 定义一个图片合并为PDF方法
+     * @param renderBO 渲染参数 BO
+     * @param screenshots 截图列表
+     * @return PDF
+     */
+    protected CompletableFuture<PageScreenshotTemp> mergeScreenshotsToPDF(WkhtmlRenderBO renderBO,
+                                                                          List<PageScreenshotTemp> screenshots,
+                                                                          BiFunction<PDDocument, List<PageScreenshotTemp>, PageScreenshotTemp> biFunction) {
+        return CompletableFuture.supplyAsync(new PageScreenshotMergeToPdfSupplier(playwrightRenderProperties, renderBO, screenshots, pageScreenshotCheckers, biFunction), dtpToPdfMergeExecutor);
+    }
+
+
+    /**
+     * 定义一个图片合并为PDF方法
+     * @param renderBO 渲染参数
+     * @param pdfs Pdf 列表
+     */
+    protected CompletableFuture<PageScreenshotTemp> mergePdfsToPDF(WkhtmlRenderBO renderBO,
+                                                                   List<PageScreenshotTemp> pdfs,
+                                                                   BiFunction<PDFMergerUtility, List<PageScreenshotTemp>, PageScreenshotTemp> biFunction) {
+        return CompletableFuture.supplyAsync(new PagePdfMergeToPdfSupplier(playwrightRenderProperties, renderBO, pdfs, pageScreenshotCheckers, biFunction), dtpToPdfMergeExecutor);
     }
 
     @Override

@@ -1,10 +1,9 @@
 package com.microsoft.playwright.spring.boot.playwright.strategy;
 
 
-
 import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.playwright.checker.PageScreenshotChecker;
 import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
+import com.microsoft.playwright.spring.boot.playwright.page.checker.PageScreenshotChecker;
 import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 
 import java.util.List;
