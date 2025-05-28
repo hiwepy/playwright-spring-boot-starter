@@ -33,14 +33,9 @@ import java.util.function.Function;
 @Data
 public class PlaywrightProperties {
 
-	public static final String PREFIX = "playwright";
-	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
 	// 85% 内存使用率阈值
 	private static final double MEMORY_THRESHOLD = 0.85d;
-	/**
-	 * THe download host for playwright. Defaults to {@code https://npm.taobao.org/mirrors}.
-	 */
-	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
+	public static final String PREFIX = "playwright";
 	/**
 	 * The memory threshold to trigger cleanup. Defaults to {@code 0.85}.
 	 */
@@ -109,7 +104,7 @@ public class PlaywrightProperties {
 		firefox(Playwright::firefox),
 		webkit(Playwright::webkit);
 
-		Function<Playwright, BrowserType> function;
+		final Function<Playwright, BrowserType> function;
 		BrowserTypeEnum(Function<Playwright, BrowserType> function) {
 			this.function = function;
 		}

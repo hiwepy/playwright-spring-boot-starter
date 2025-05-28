@@ -23,11 +23,6 @@ public class BrowserContextInitializer implements Runnable {
 			try {
 				log.info("Browser Context Pool Start initialize ...");
 				// 1、触发浏览器安装
-				// PLAYWRIGHT_CHROMIUM_DOWNLOAD_HOST
-				// PLAYWRIGHT_FIREFOX_DOWNLOAD_HOST
-				// PLAYWRIGHT_WEBKIT_DOWNLOAD_HOST
-				// PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT
-				System.setProperty("PLAYWRIGHT_DOWNLOAD_HOST", playwrightProperties.getDownloadHost());
 				browserContextPool.preparePool();
 				log.info("Browser Context Pool is initialize completed.");
 			} catch (Exception e) {
