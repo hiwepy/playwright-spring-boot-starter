@@ -5,7 +5,6 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.*;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.util.CollectionUtils;
 
@@ -13,9 +12,30 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-@Accessors(chain = true)
 @Data
 public class BrowserNewContextOptions {
+
+    public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+    public static final long DEFAULT_RETRY_DELAY_MS = 1000;
+    public static final long DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS = 30 * 1000;
+
+    /**
+     * Maximum number of retry attempts to create a new context. If the limit is reached, the oldest context will be closed.
+     * Defaults 3
+     */
+    public Integer maximumRetryAttempts = DEFAULT_MAX_RETRY_ATTEMPTS;
+
+    /**
+     * Maximum time to wait for the retry delay. If the limit is reached, the oldest context will be closed. Defaults 1 second
+     */
+    public Long maximumRetryDelayMs = DEFAULT_RETRY_DELAY_MS;
+
+    /**
+     * Maximum time to wait for the resource cleanup. If the limit is reached, the oldest context will be closed. Defaults 30
+     * seconds
+     */
+    public Long maximumResourceCleanupTimeoutMs = DEFAULT_RESOURCE_CLEANUP_TIMEOUT_MS;
+
     /**
      * Whether to automatically download all the attachments. Defaults to {@code true} where all the downloads are accepted.
      */
@@ -35,11 +55,11 @@ public class BrowserNewContextOptions {
      * {@code http://localhost:3000/bar.html}</li>
      * </ul>
      */
-    public String baseURL;
+    public String baseUrl;
     /**
      * Toggles bypassing page's Content-Security-Policy.
      */
-    public Boolean bypassCSP;
+    public Boolean bypassCsp;
     /**
      * Emulates {@code "prefers-colors-scheme"} media feature, supported values are {@code "light"}, {@code "dark"}, {@code
      * "no-preference"}. See {@link Page#emulateMedia Page.emulateMedia()} for more details. Passing {@code null} resets
@@ -206,8 +226,8 @@ public class BrowserNewContextOptions {
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         Browser.NewContextOptions options = new Browser.NewContextOptions();
         map.from(this.getAcceptDownloads()).whenNonNull().to(options::setAcceptDownloads);
-        map.from(this.getBaseURL()).whenHasText().to(options::setBaseURL);
-        map.from(this.getBypassCSP()).whenNonNull().to(options::setBypassCSP);
+        map.from(this.getBaseUrl()).whenHasText().to(options::setBaseURL);
+        map.from(this.getBypassCsp()).whenNonNull().to(options::setBypassCSP);
         map.from(this.getColorScheme()).to(options::setColorScheme);
         map.from(this.getDeviceScaleFactor()).whenNonNull().to(options::setDeviceScaleFactor);
         map.from(this.getExtraHttpHeaders()).whenNonNull().to(options::setExtraHTTPHeaders);

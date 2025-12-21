@@ -152,10 +152,6 @@ public class PlaywrightUtil {
     public static void closePage(Page page) {
         try {
             if (Objects.nonNull(page) && !page.isClosed()){
-                // 清理页面状态
-                page.evaluate("window.localStorage.clear();");
-                page.evaluate("window.sessionStorage.clear();");
-                page.evaluate("window.location='about:blank';");
                 page.close();
                 log.debug("Close page Instance Success.");
             }

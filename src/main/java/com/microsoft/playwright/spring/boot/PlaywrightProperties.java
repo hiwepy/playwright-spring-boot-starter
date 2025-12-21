@@ -19,9 +19,9 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.util.function.Function;
 
@@ -53,45 +53,55 @@ public class PlaywrightProperties {
 	 * Browser type. Defaults to {@link BrowserTypeEnum#chromium chromium}.
 	 */
 	private BrowserTypeEnum browserType = BrowserTypeEnum.chromium;
-    /**
-     * Browser Page Pool Config
-     */
-    private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
+	@NestedConfigurationProperty
 	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserConnectOptions connectOptions = new BrowserConnectOptions();
 	/**
 	 * Launch Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
+	/**
+	 * Launch Persistent Context Options
+	 */
+	@NestedConfigurationProperty
+	private BrowserLaunchPersistentContextOptions launchPersistentContextOptions = new BrowserLaunchPersistentContextOptions();
 	/**
 	 * New Context Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
-	/**
-	 * New Page Options
-	 */
-	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */
+	@NestedConfigurationProperty
 	private PageNavigateOptions pageNavigateOptions = new PageNavigateOptions();
 	/**
 	 * Page Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
+	/**
+	 * Page Wait For Selector Options
+	 */
+	@NestedConfigurationProperty
+	private PageWaitForSelectorOptions pageWaitForSelectorOptions = new PageWaitForSelectorOptions();
 	/**
 	 * Page Element Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
 	/**
 	 * Page Pdf Options
 	 */
+	@NestedConfigurationProperty
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
     public enum BrowserTypeEnum {
