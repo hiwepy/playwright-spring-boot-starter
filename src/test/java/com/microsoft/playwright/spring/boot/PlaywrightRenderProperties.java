@@ -1,7 +1,3 @@
-/**
- * Copyright (C) 2022 杭州天音计算机系统工程有限公司
- * All Rights Reserved.
- */
 package com.microsoft.playwright.spring.boot;
 
 import lombok.Data;
@@ -13,12 +9,17 @@ import java.time.Duration;
 @Data
 public class PlaywrightRenderProperties {
 
-	public static final String PREFIX = "playwright.render";
+	public static final String PREFIX = "playwright.page-render-options";
 
 	/**
 	 * 浏览器会话是否隔离
 	 */
 	protected boolean isolated;
+
+	/**
+	 * 页面加载完成状态标记元素的选择器（前后端协商后确定的页面就绪的判断标识）
+	 */
+	private String waitForSelector;
 
 	/**
 	 * 临时是否写入磁盘
@@ -68,5 +69,42 @@ public class PlaywrightRenderProperties {
 	 * 截图大小，判定截图失败(kb)
 	 */
 	protected Long lowerLimit = 100L;
+
+	/**
+	 * 缓存配置
+	 */
+	protected RenderCache cache = new RenderCache();
+
+	/**
+	 * 远程 PDF 配置
+	 */
+	protected RemotePdf pdf = new RemotePdf();
+
+	@Data
+	public static class RenderCache {
+
+		protected Duration expireAfterWrite = Duration.ofSeconds(3);
+		protected int initialCapacity = 3;
+		protected int maximumSize = 10;
+
+	}
+	/**
+	 * 远程 PDF 配置
+	 */
+	@Data
+	public static class RemotePdf {
+
+		/**
+		 * 连接超时时间（毫秒）
+		 */
+		protected Duration connectTimeout = Duration.ofSeconds(3);
+
+		/**
+		 * 读取超时时间（毫秒）
+		 */
+		protected Duration readTimeout = Duration.ofSeconds(10);
+
+	}
+
 
 }

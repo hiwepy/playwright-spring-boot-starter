@@ -19,9 +19,9 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.spring.boot.options.*;
 import com.microsoft.playwright.spring.boot.pool.BrowserContextPoolConfig;
-import com.microsoft.playwright.spring.boot.pool.BrowserPagePoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.util.function.Function;
 
@@ -35,8 +35,16 @@ public class PlaywrightProperties {
 
 	public static final String PREFIX = "playwright";
 	public static final String PLAYWRIGHT_DOWNLOAD_HOST = "https://npm.taobao.org/mirrors";
+	// 85% 内存使用率阈值
+	private static final double MEMORY_THRESHOLD = 0.85d;
+	/**
+	 * THe download host for playwright. Defaults to {@code https://npm.taobao.org/mirrors}.
+	 */
 	private String downloadHost = PLAYWRIGHT_DOWNLOAD_HOST;
-
+	/**
+	 * The memory threshold to trigger cleanup. Defaults to {@code 0.85}.
+	 */
+	private double memoryThreshold = MEMORY_THRESHOLD;
 	/**
 	 *  Whether to isolate Browser session. Defaults to {@code false}.
 	 */
@@ -45,48 +53,58 @@ public class PlaywrightProperties {
 	 * Browser type. Defaults to {@link BrowserTypeEnum#chromium chromium}.
 	 */
 	private BrowserTypeEnum browserType = BrowserTypeEnum.chromium;
-    /**
-     * Browser Page Pool Config
-     */
-    private BrowserPagePoolConfig browserPagePool = new BrowserPagePoolConfig();
 	/**
 	 * Browser Context Pool Config
 	 */
+	@NestedConfigurationProperty
 	private BrowserContextPoolConfig browserContextPool = new BrowserContextPoolConfig();
 	/**
 	 * Connect Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserConnectOptions connectOptions = new BrowserConnectOptions();
 	/**
 	 * Launch Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserLaunchOptions launchOptions = new BrowserLaunchOptions();
+	/**
+	 * Launch Persistent Context Options
+	 */
+	@NestedConfigurationProperty
+	private BrowserLaunchPersistentContextOptions launchPersistentContextOptions = new BrowserLaunchPersistentContextOptions();
 	/**
 	 * New Context Options
 	 */
+	@NestedConfigurationProperty
 	private BrowserNewContextOptions newContextOptions = new BrowserNewContextOptions();
-	/**
-	 * New Page Options
-	 */
-	private BrowserNewPageOptions newPageOptions = new BrowserNewPageOptions();
 	/**
 	 * Page Navigate Options
 	 */
+	@NestedConfigurationProperty
 	private PageNavigateOptions pageNavigateOptions = new PageNavigateOptions();
 	/**
 	 * Page Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private PageScreenshotOptions pageScreenshotOptions = new PageScreenshotOptions();
+	/**
+	 * Page Wait For Selector Options
+	 */
+	@NestedConfigurationProperty
+	private PageWaitForSelectorOptions pageWaitForSelectorOptions = new PageWaitForSelectorOptions();
 	/**
 	 * Page Element Screenshot Options
 	 */
+	@NestedConfigurationProperty
 	private ElementScreenshotOptions elementScreenshotOptions = new ElementScreenshotOptions();
 	/**
 	 * Page Pdf Options
 	 */
+	@NestedConfigurationProperty
 	private PagePdfOptions pagePdfOptions = new PagePdfOptions();
 
-	public enum BrowserTypeEnum {
+    public enum BrowserTypeEnum {
 		chromium(Playwright::chromium),
 		firefox(Playwright::firefox),
 		webkit(Playwright::webkit);

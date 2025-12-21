@@ -1,10 +1,10 @@
 package com.microsoft.playwright.spring.boot;
 
 import com.alibaba.fastjson2.JSON;
-import com.microsoft.playwright.spring.boot.bo.WkhtmlRenderBO;
-import com.microsoft.playwright.spring.boot.enums.RenderType;
-import com.microsoft.playwright.spring.boot.strategy.PlaywrightRenderStrategyRouter;
-import com.microsoft.playwright.spring.boot.vo.WkhtmlRenderResultVO;
+import com.microsoft.playwright.spring.boot.playwright.bo.WkhtmlRenderBO;
+import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
+import com.microsoft.playwright.spring.boot.playwright.strategy.PlaywrightRenderStrategyRouter;
+import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import hitool.core.lang3.uid.Sequence;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,6 @@ import org.springframework.util.Base64Utils;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -85,30 +84,17 @@ public class PlaywrightPdfApplication_Test1 implements CommandLineRunner {
         renderBO.setParam(Base64Utils.encodeToString(JSON.toJSONString(params).getBytes()));
         renderBO.setAsync(true);
         WkhtmlRenderResultVO resultBO = null;
-        try {
-            // 2.2、渲染 PDF
-            CompletableFuture.allOf(CompletableFuture.runAsync(() -> {
-                try {
-                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
-                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }),CompletableFuture.runAsync(() -> {
-                try {
-                    renderBO.setRanderId(Objects.toString(sequence.nextId()));
-                    renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            })).join();
-            //resultBO = renderStrategyRouter.route(RenderType.TO_PDF_BUFFER).render(renderBO);
-
-        } catch (Exception e) {
-            log.error("pdf生成失败;", e);
-        } finally {
-            // 3、删除临时文件
-            //renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
+        for (int i = 0; i < 100; i++) {
+            try {
+                renderBO.setTaskId(Objects.toString(sequence.nextId()));
+                WkhtmlRenderResultVO resultVO = renderStrategyRouter.route(RenderType.TO_PDF_FILE).render(renderBO);
+                log.info("PDF生成成功: {}", resultVO);
+            } catch (Exception e) {
+                log.error("pdf生成失败;", e);
+            } finally {
+                // 3、删除临时文件
+                //renderStrategyRouter.route(RenderType.TO_PDF_FILE).cleanTemporary(renderBO, resultBO);
+            }
         }
     }
 

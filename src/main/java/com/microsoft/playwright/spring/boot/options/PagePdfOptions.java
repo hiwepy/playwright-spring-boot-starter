@@ -4,12 +4,10 @@ package com.microsoft.playwright.spring.boot.options;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.Margin;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import org.springframework.boot.context.properties.PropertyMapper;
 
 import java.nio.file.Path;
 
-@Accessors(chain = true)
 @Data
 public class PagePdfOptions {
 

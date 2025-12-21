@@ -138,6 +138,17 @@ public class PlaywrightUtil {
         return page.screenshot();
     }
 
+    public static void cleanupBrowserContext(BrowserContext browserContext) {
+        if (Objects.isNull(browserContext)) {
+            return;
+        }
+        log.info("Cleanup BrowserContext Cookies '{}'.", browserContext);
+        // 1. 清理 Cookie
+        browserContext.clearCookies();
+        // 2. 关闭所有页面
+        browserContext.pages().forEach(PlaywrightUtil::closePage);
+    }
+
     public static void closePage(Page page) {
         try {
             if (Objects.nonNull(page) && !page.isClosed()){
@@ -145,9 +156,10 @@ public class PlaywrightUtil {
                 log.debug("Close page Instance Success.");
             }
         } catch (Exception e) {
-            log.error("Close Page Error.", e);
+            log.warn("Failed to close page", e);
             // ignore error
         }
+
     }
 
 }
