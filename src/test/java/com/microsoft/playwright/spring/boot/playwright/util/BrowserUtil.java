@@ -18,7 +18,7 @@ public class BrowserUtil {
         if (Objects.isNull(request)) {
             return;
         }
-       jakarta.servlet.http.Cookie[] requestCookies = request.getCookies();
+        jakarta.servlet.http.Cookie[] requestCookies = request.getCookies();
         if(Objects.isNull(browserContext) || ArrayUtils.isEmpty(requestCookies)){
             return;
         }

@@ -29,7 +29,6 @@ import hitool.core.format.ByteUnitFormat;
 import hitool.core.lang3.StringUtils;
 import hitool.core.lang3.time.DateFormats;
 import hitool.core.lang3.uid.Sequence;
-import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
@@ -46,6 +45,7 @@ import org.springframework.util.Base64Utils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;

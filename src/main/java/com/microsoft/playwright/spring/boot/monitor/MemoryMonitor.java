@@ -3,10 +3,13 @@ package com.microsoft.playwright.spring.boot.monitor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 
+/**
+ * @author wandl
+ */
 @Slf4j
 public class MemoryMonitor {
 
-    private double memoryThreshold;
+    private final double memoryThreshold;
 
     public MemoryMonitor(double memoryThreshold) {
         this.memoryThreshold = memoryThreshold;
