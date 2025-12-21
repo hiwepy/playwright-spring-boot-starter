@@ -16,6 +16,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * @author wandl
+ */
 @Configuration
 @ConditionalOnClass({ Playwright.class, PooledObjectFactory.class })
 @EnableConfigurationProperties(PlaywrightProperties.class)
