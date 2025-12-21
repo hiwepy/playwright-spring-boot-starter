@@ -510,6 +510,11 @@
 			<artifactId>slf4j-simple</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- For Servlet Api -->
+		<dependency>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
+		</dependency>
 
 		<!-- Core starter, including auto-configuration support, logging and YAML -->
 		<dependency>

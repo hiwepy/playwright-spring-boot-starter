@@ -2,11 +2,11 @@ package com.microsoft.playwright.spring.boot.playwright.util;
 
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.options.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +18,7 @@ public class BrowserUtil {
         if (Objects.isNull(request)) {
             return;
         }
-        javax.servlet.http.Cookie[] requestCookies = request.getCookies();
+       jakarta.servlet.http.Cookie[] requestCookies = request.getCookies();
         if(Objects.isNull(browserContext) || ArrayUtils.isEmpty(requestCookies)){
             return;
         }

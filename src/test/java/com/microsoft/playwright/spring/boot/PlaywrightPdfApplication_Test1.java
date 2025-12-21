@@ -6,6 +6,7 @@ import com.microsoft.playwright.spring.boot.playwright.enums.RenderType;
 import com.microsoft.playwright.spring.boot.playwright.strategy.PlaywrightRenderStrategyRouter;
 import com.microsoft.playwright.spring.boot.playwright.vo.WkhtmlRenderResultVO;
 import hitool.core.lang3.uid.Sequence;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -15,7 +16,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Base64Utils;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
