@@ -9,7 +9,7 @@
 		<relativePath /> 
 	</parent>
 
-	<groupId>com.github.hiwepy</groupId>
+	<groupId>io.github.hiwepy</groupId>
 	<artifactId>playwright-spring-boot-starter</artifactId>
 
 	<description>Spring Boot Starter For Playwright</description>
@@ -445,7 +445,7 @@
 				<scope>test</scope>
 			</dependency>
 			<dependency>
-				<groupId>com.github.hiwepy</groupId>
+				<groupId>io.github.hiwepy</groupId>
 				<artifactId>spring-biz</artifactId>
 				<version>${spring-biz.version}</version>
 			</dependency>
@@ -551,7 +551,7 @@
 			<artifactId>commons-io</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.github.hiwepy</groupId>
+			<groupId>io.github.hiwepy</groupId>
 			<artifactId>spring-biz</artifactId>
 		</dependency>
 		<dependency>
@@ -597,7 +597,7 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>com.github.hiwepy</groupId>
+			<groupId>io.github.hiwepy</groupId>
 			<artifactId>redistpl-plus-spring-boot-starter</artifactId>
 			<version>${spring-boot-starter-redistpl-plus.version}</version>
 			<scope>test</scope>
