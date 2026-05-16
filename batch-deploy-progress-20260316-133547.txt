@@ -1,0 +1,11 @@
+playwright-spring-boot-starter:2.3.x:FAIL
+playwright-spring-boot-starter:2.4.x:FAIL
+playwright-spring-boot-starter:2.7.x:SUCCESS
+playwright-spring-boot-starter:3.0.x:FAIL
+playwright-spring-boot-starter:3.1.x:FAIL
+playwright-spring-boot-starter:3.2.x:FAIL
+playwright-spring-boot-starter:3.3.x:FAIL
+playwright-spring-boot-starter:3.4.x:FAIL
+playwright-spring-boot-starter:3.5.x:FAIL
+playwright-spring-boot-starter:4.0.x:FAIL
+playwright-spring-boot-starter:main:FAIL
